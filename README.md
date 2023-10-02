@@ -15,9 +15,14 @@ Example configuration (add to bottom of `extra_cfg.yml`)
 # Number of choices players can choose from at each voting interval
 NumChoices: 3
 # How long the vote stays open
+# Minimum 30, Default 300
 VotingDurationSeconds: 300
 # How often a vote takes place
+# Minimum 5, Default 90
 VotingIntervalMinutes: 90
+# How often a vote takes place
+# Minimum 1, Default 5
+TransitionDurationMinutes: 10
 # Should content manager download links be updated
 UpdateContentManager: true
 # Tracks that can be voted on

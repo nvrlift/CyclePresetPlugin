@@ -1,42 +1,36 @@
 ﻿using AssettoServer.Network.Tcp;
 using AssettoServer.Server;
-using AssettoServer.Server.Configuration;
 using AssettoServer.Server.Plugin;
 using AssettoServer.Shared.Network.Packets.Shared;
 using AssettoServer.Shared.Services;
 using Microsoft.Extensions.Hosting;
+using nvrlift.AssettoServer.Server.Track;
 using Serilog;
 
 namespace VotingTrackPlugin;
 
 public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
 {
-    private readonly ACServerConfiguration _acServerConfiguration;
     private readonly EntryCarManager _entryCarManager;
+    private readonly TrackManager _trackManager;
     private readonly VotingTrackConfiguration _configuration;
     private readonly List<ACTcpClient> _alreadyVoted = new();
     private readonly List<TrackChoice> _availableTracks = new();
+    private readonly List<TrackType> _tracks;
 
     private bool _votingOpen = false;
 
     private class TrackChoice
     {
-        public string Track { get; init; }
+        public TrackType Track { get; init; }
         public int Votes { get; set; }
     }
 
-    public VotingTrack(VotingTrackConfiguration configuration, ACServerConfiguration acServerConfiguration, EntryCarManager entryCarManager, IHostApplicationLifetime applicationLifetime) : base(applicationLifetime)
+    public VotingTrack(VotingTrackConfiguration configuration, EntryCarManager entryCarManager, TrackManager trackManager, IHostApplicationLifetime applicationLifetime) : base(applicationLifetime)
     {
         _configuration = configuration;
         _entryCarManager = entryCarManager;
-        _acServerConfiguration = acServerConfiguration;
-
-        if (!_configuration.BlacklistedWeathers.Contains(WeatherFxType.None))
-        {
-            _configuration.BlacklistedWeathers.Add(WeatherFxType.None);
-        }
-        
-        _weathers = Enum.GetValues<WeatherFxType>().Except(_configuration.BlacklistedWeathers).ToList();
+        _trackManager = trackManager;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -50,7 +44,7 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
             catch (TaskCanceledException) { }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error during voting weather update");
+                Log.Error(ex, "Error during voting track update");
             }
             finally
             {
@@ -63,7 +57,7 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
     {
         if (!_votingOpen)
         {
-            client.SendPacket(new ChatMessage { SessionId = 255, Message = "There is no ongoing weather vote." });
+            client.SendPacket(new ChatMessage { SessionId = 255, Message = "There is no ongoing track vote." });
             return;
         }
 
@@ -81,57 +75,55 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
 
         _alreadyVoted.Add(client);
 
-        var votedWeather = _availableWeathers[choice];
+        var votedWeather = _availableTracks[choice];
         votedWeather.Votes++;
 
-        client.SendPacket(new ChatMessage { SessionId = 255, Message = $"Your vote for {votedWeather.Weather} has been counted." });
+        client.SendPacket(new ChatMessage { SessionId = 255, Message = $"Your vote for {votedWeather.Track} has been counted." });
     }
 
     private async Task UpdateAsync(CancellationToken stoppingToken)
     {
-        var last = _weatherManager.CurrentWeather;
+        var last = _trackManager.CurrentTrack;
 
-        _availableWeathers.Clear();
+        _availableTracks.Clear();
         _alreadyVoted.Clear();
 
-        var weathersLeft = new List<WeatherFxType>(_weathers);
+        var tracksLeft = new List<TrackType>(_tracks);
 
-        _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = "Vote for next weather:" });
+        _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = "Vote for next track:" });
         for (int i = 0; i < _configuration.NumChoices; i++)
         {
-            var nextWeather = weathersLeft[Random.Shared.Next(weathersLeft.Count)];
-            _availableWeathers.Add(new WeatherChoice { Weather = nextWeather, Votes = 0 });
-            weathersLeft.Remove(nextWeather);
+            var nextTrack = tracksLeft[Random.Shared.Next(tracksLeft.Count)];
+            _availableTracks.Add(new TrackChoice { Track = nextTrack, Votes = 0 });
+            tracksLeft.Remove(nextTrack);
 
-            _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $" /w {i} - {nextWeather}" });
+            _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $" /votetrack {i} - {nextTrack.Name}" });
         }
 
         _votingOpen = true;
         await Task.Delay(_configuration.VotingDurationMilliseconds, stoppingToken);
         _votingOpen = false;
 
-        int maxVotes = _availableWeathers.Max(w => w.Votes);
-        var weathers = _availableWeathers.Where(w => w.Votes == maxVotes).Select(w => w.Weather).ToList();
+        int maxVotes = _availableTracks.Max(w => w.Votes);
+        var tracks = _availableTracks.Where(w => w.Votes == maxVotes).Select(w => w.Track).ToList();
 
-        var winner = weathers[Random.Shared.Next(weathers.Count)];
-        var winnerType = _weatherTypeProvider.GetWeatherType(winner);
+        var winner = tracks[Random.Shared.Next(tracks.Count)];
 
-        _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $"Weather vote ended. Next weather: {winner}" });
 
-        _weatherManager.SetWeather(new WeatherData(last.Type, winnerType)
+        if (_trackManager.CurrentTrack == winner)
         {
-            TransitionDuration = 120000.0,
-            TemperatureAmbient = last.TemperatureAmbient,
-            TemperatureRoad = (float)WeatherUtils.GetRoadTemperature(_weatherManager.CurrentDateTime.TimeOfDay.TickOfDay / 10_000_000.0, last.TemperatureAmbient,
-                winnerType.TemperatureCoefficient),
-            Pressure = last.Pressure,
-            Humidity = winnerType.Humidity,
-            WindSpeed = last.WindSpeed,
-            WindDirection = last.WindDirection,
-            RainIntensity = last.RainIntensity,
-            RainWetness = last.RainWetness,
-            RainWater = last.RainWater,
-            TrackGrip = last.TrackGrip
-        });
+            _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $"Track vote ended. Staying on track for {_configuration.VotingIntervalMinutes} more minutes." });
+        }
+        else
+        {
+            _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $"Track vote ended. Next track: {winner.Name}" });
+            _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $"Track vote ended. Next track: {winner.Name}" });
+
+            _trackManager.SetTrack(new TrackData(last.Type, winner) // TODO
+            {
+                TransitionDuration = _configuration.TransitionDurationMilliseconds,
+                UpdateContentManager = _configuration.UpdateContentManager
+            });
+        }
     }
 }
