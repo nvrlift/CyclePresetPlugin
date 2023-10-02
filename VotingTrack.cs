@@ -1,10 +1,11 @@
 ﻿using AssettoServer.Network.Tcp;
 using AssettoServer.Server;
 using AssettoServer.Server.Plugin;
+using AssettoServer.Shared.Network.Packets.Outgoing;
 using AssettoServer.Shared.Network.Packets.Shared;
 using AssettoServer.Shared.Services;
 using Microsoft.Extensions.Hosting;
-using nvrlift.AssettoServer.Server.Track;
+using nvrlift.AssettoServer.Track;
 using Serilog;
 
 namespace VotingTrackPlugin;
@@ -31,6 +32,8 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
         _configuration = configuration;
         _entryCarManager = entryCarManager;
         _trackManager = trackManager;
+        
+        _tracks = _configuration.AvailableTracks;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -75,16 +78,16 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
 
         _alreadyVoted.Add(client);
 
-        var votedWeather = _availableTracks[choice];
-        votedWeather.Votes++;
+        var votedTrack = _availableTracks[choice];
+        votedTrack.Votes++;
 
-        client.SendPacket(new ChatMessage { SessionId = 255, Message = $"Your vote for {votedWeather.Track} has been counted." });
+        client.SendPacket(new ChatMessage { SessionId = 255, Message = $"Your vote for {votedTrack.Track.Name} has been counted." });
     }
 
     private async Task UpdateAsync(CancellationToken stoppingToken)
     {
         var last = _trackManager.CurrentTrack;
-
+        
         _availableTracks.Clear();
         _alreadyVoted.Clear();
 
@@ -105,21 +108,24 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
         _votingOpen = false;
 
         int maxVotes = _availableTracks.Max(w => w.Votes);
-        var tracks = _availableTracks.Where(w => w.Votes == maxVotes).Select(w => w.Track).ToList();
+        List<TrackType?> tracks = _availableTracks.Where(w => w.Votes == maxVotes).Select(w => w.Track).ToList();
 
         var winner = tracks[Random.Shared.Next(tracks.Count)];
 
 
-        if (_trackManager.CurrentTrack == winner)
+        if (last.Type == winner)
         {
             _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $"Track vote ended. Staying on track for {_configuration.VotingIntervalMinutes} more minutes." });
         }
         else
         {
             _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $"Track vote ended. Next track: {winner.Name}" });
-            _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $"Track vote ended. Next track: {winner.Name}" });
+            _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $"Track will change in {_configuration.TransitionDurationMinutes} minutes." });
 
-            _trackManager.SetTrack(new TrackData(last.Type, winner) // TODO
+            // Delay the track switch by configured time delay
+            await Task.Delay(_configuration.TransitionDurationMinutes, stoppingToken);
+
+            _trackManager.SetTrack(new TrackData(last.Type, winner)
             {
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
                 UpdateContentManager = _configuration.UpdateContentManager
