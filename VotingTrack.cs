@@ -1,5 +1,6 @@
 ﻿using AssettoServer.Network.Tcp;
 using AssettoServer.Server;
+using AssettoServer.Server.Configuration;
 using AssettoServer.Server.Plugin;
 using AssettoServer.Shared.Network.Packets.Shared;
 using AssettoServer.Shared.Services;
@@ -10,6 +11,7 @@ namespace VotingTrackPlugin;
 
 public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
 {
+    private readonly ACServerConfiguration _acServerConfiguration;
     private readonly EntryCarManager _entryCarManager;
     private readonly VotingTrackConfiguration _configuration;
     private readonly List<ACTcpClient> _alreadyVoted = new();
@@ -23,10 +25,11 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
         public int Votes { get; set; }
     }
 
-    public VotingTrack(VotingTrackConfiguration configuration, EntryCarManager entryCarManager, IHostApplicationLifetime applicationLifetime) : base(applicationLifetime)
+    public VotingTrack(VotingTrackConfiguration configuration, ACServerConfiguration acServerConfiguration, EntryCarManager entryCarManager, IHostApplicationLifetime applicationLifetime) : base(applicationLifetime)
     {
         _configuration = configuration;
         _entryCarManager = entryCarManager;
+        _acServerConfiguration = acServerConfiguration;
 
         if (!_configuration.BlacklistedWeathers.Contains(WeatherFxType.None))
         {

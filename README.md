@@ -22,12 +22,12 @@ VotingIntervalMinutes: 90
 UpdateContentManager: true
 # Tracks that can be voted on
 AvailableTracks:
-- DisplayName: Gunsai
+- Name: Gunsai
   TrackFolder: some/path/to/gunsai
   TrackLayoutConfig: GunsaiTogue
   CMLink: https://mega.nz/...... # field only required with UpdateContentManager: true
   CMVersion: 1.5 # field only required with UpdateContentManager: true
-- DisplayName: Shutoko
+- Name: Shutoko
   TrackFolder: some/path/to/Shutoko
   TrackLayoutConfig: Default
   CMLink: https://mega.nz/...... # field only required with UpdateContentManager: true
