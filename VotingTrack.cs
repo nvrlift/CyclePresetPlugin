@@ -43,6 +43,7 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
         
         while (!stoppingToken.IsCancellationRequested)
         {
+            await Task.Delay(_configuration.VotingIntervalMilliseconds - _configuration.VotingDurationMilliseconds, stoppingToken);
             try
             {
                 await UpdateAsync(stoppingToken);
@@ -52,10 +53,7 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
             {
                 Log.Error(ex, "Error during voting track update");
             }
-            finally
-            {
-                await Task.Delay(_configuration.VotingIntervalMilliseconds - _configuration.VotingDurationMilliseconds, stoppingToken);
-            }
+            // finally { }
         }
     }
 
