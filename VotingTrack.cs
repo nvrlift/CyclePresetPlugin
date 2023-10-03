@@ -19,6 +19,8 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
     private readonly List<TrackType> _tracks;
 
     private bool _votingOpen = false;
+    private bool _adminTrackChange = false;
+    private TrackData? _adminTrack = null;
 
     private class TrackChoice
     {
@@ -37,6 +39,8 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _ = Task.Run(() => ExecuteAdminAsync(stoppingToken), stoppingToken);
+        
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -55,6 +59,42 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
         }
     }
 
+    internal void ListAllTracks(ACTcpClient client)
+    {
+        client.SendPacket(new ChatMessage { SessionId = 255, Message = "Vote for next track:" });
+        for (int i = 0; i < _tracks.Count; i++)
+        {
+            var track = _tracks[i];
+            client.SendPacket(new ChatMessage { SessionId = 255, Message = $" /admintrackset {i} - {track.Name}" });
+        }
+    }
+    internal void SetTrack(ACTcpClient client, int choice)
+    {
+        var last = _trackManager.CurrentTrack;
+        
+        if (choice < 0 && choice >= _tracks.Count)
+        {
+            client.SendPacket(new ChatMessage { SessionId = 255, Message = "Invalid track choice." });
+
+            return;
+        }
+        var next = _tracks[choice];
+        
+        if (last.Type == next)
+        {
+            client.SendPacket(new ChatMessage { SessionId = 255, Message = $"No change made, you tried setting the current track." });
+        }
+        else
+        {
+            _adminTrack = new TrackData(_trackManager.CurrentTrack.Type, next)
+            {
+                TransitionDuration = _configuration.TransitionDurationMilliseconds,
+                UpdateContentManager = _configuration.UpdateContentManager
+            };
+            _adminTrackChange = true;
+        }
+    }
+    
     internal void CountVote(ACTcpClient client, int choice)
     {
         if (!_votingOpen)
@@ -129,6 +169,40 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
                 UpdateContentManager = _configuration.UpdateContentManager
             });
+        }
+    }
+
+    private async Task ExecuteAdminAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                if (_adminTrackChange)
+                {
+                    _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $"Next track: {_adminTrack.UpcomingType.Name}" });
+                    _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = $"Track will change in {_configuration.TransitionDurationMinutes} minutes." });
+
+                    // Delay the track switch by configured time delay
+                    await Task.Delay(_configuration.TransitionDurationMinutes, stoppingToken);
+
+                    if (_adminTrack != null)
+                    {
+                        _adminTrackChange = false;
+                        _trackManager.SetTrack(_adminTrack);
+                        _adminTrack = null;
+                    }
+                }
+            }
+            catch (TaskCanceledException) { }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error during voting track update");
+            }
+            finally
+            {
+                await Task.Delay(60_000, stoppingToken);
+            }
         }
     }
 }
