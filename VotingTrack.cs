@@ -1,12 +1,11 @@
 ﻿using AssettoServer.Network.Tcp;
 using AssettoServer.Server;
 using AssettoServer.Server.Plugin;
-using AssettoServer.Shared.Network.Packets.Outgoing;
 using AssettoServer.Shared.Network.Packets.Shared;
 using AssettoServer.Shared.Services;
 using Microsoft.Extensions.Hosting;
-using nvrlift.AssettoServer.Track;
 using Serilog;
+using VotingTrackPlugin.Track;
 
 namespace VotingTrackPlugin;
 

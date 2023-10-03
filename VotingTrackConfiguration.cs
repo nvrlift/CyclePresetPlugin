@@ -3,6 +3,7 @@ using AssettoServer.Server.Weather;
 using JetBrains.Annotations;
 using nvrlift.AssettoServer.Track;
 using YamlDotNet.Serialization;
+using TrackType = VotingTrackPlugin.Track.TrackType;
 
 namespace VotingTrackPlugin;
 
