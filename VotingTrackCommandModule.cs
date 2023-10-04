@@ -21,7 +21,7 @@ public class VotingTrackCommandModule : ACModuleBase
     }
 
     [Command("admintracklist"), RequireAdmin]
-    public void AdminTrackList(int choice)
+    public void AdminTrackList()
     {
         _votingTrack.ListAllTracks(Context.Client!);
     }

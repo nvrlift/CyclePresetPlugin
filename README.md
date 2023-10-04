@@ -26,16 +26,9 @@ TransitionDurationMinutes: 10
 # Should content manager download links be updated
 UpdateContentManager: true
 # Tracks that can be voted on
+# CM field only required with UpdateContentManager: true
 AvailableTracks:
-- Name: Gunsai
-  TrackFolder: some/path/to/gunsai
-  TrackLayoutConfig: GunsaiTogue
-  CMLink: https://mega.nz/...... # field only required with UpdateContentManager: true
-  CMVersion: 1.5 # field only required with UpdateContentManager: true
-- Name: Shutoko
-  TrackFolder: some/path/to/Shutoko
-  TrackLayoutConfig: Default
-  CMLink: https://mega.nz/...... # field only required with UpdateContentManager: true
-  CMVersion: 1.5 # field only required with UpdateContentManager: true
+- { Name: Gunsai, TrackFolder: some/path/to/gunsai, TrackLayoutConfig: GunsaiTogue, CMLink: https://mega.nz/...... , CMVersion: 1.5 }
+- { Name: Shutoko, TrackFolder: some/path/to/Shutoko, TrackLayoutConfig: Default, CMLink: https://mega.nz/...... , CMVersion: 1.5 }
 
 ```
