@@ -37,7 +37,7 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
         
         _tracks = _configuration.VotingTrackTypes;
         
-        _trackManager.SetTrack(new TrackData(new()
+        _trackManager.SetTrack(new TrackData(new VotingTrackType()
         {
             Name = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track 
                                                               && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)?.Name 
