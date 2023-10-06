@@ -4,11 +4,12 @@ namespace VotingTrackPlugin;
 
 public class VotingTrackType : ITrackBaseType
 {
-    public string Name { get; set; }
-    public string TrackFolder { get; set; }
-    public string TrackLayoutConfig { get; set; }
-    public string CMLink { get; set; }
-    public string CMVersion { get; set; }
+    public required string Name { get; set; }
+    public required string TrackFolder { get; set; }
+    public required string TrackLayoutConfig { get; set; }
+    public required string CMLink { get; set; }
+    public required string CMVersion { get; set; }
+
     public VotingTrackType(TrackEntry input)
     {
         Name = input.Name;
@@ -17,5 +18,8 @@ public class VotingTrackType : ITrackBaseType
         CMLink = input.CMLink ?? "";
         CMVersion = input.CMVersion ?? "";
     }
-    public VotingTrackType(){}
+
+    public VotingTrackType()
+    {
+    }
 }

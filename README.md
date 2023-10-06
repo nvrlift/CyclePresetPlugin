@@ -1,14 +1,18 @@
 ﻿# VotingTrackPlugin
+
 Plugin to let players vote for a server weather at a specified interval.
 
 ## Configuration
+
 Enable the plugin in `extra_cfg.yml`
+
 ```yaml
 EnablePlugins:
 - VotingTrackPlugin
 ```
 
 Example configuration (add to bottom of `extra_cfg.yml`)
+
 ```yaml
 ---
 !VotingTrackConfiguration

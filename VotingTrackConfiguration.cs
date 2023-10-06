@@ -17,7 +17,16 @@ public class VotingTrackConfiguration : IValidateConfiguration<VotingTrackConfig
     [YamlIgnore] public int VotingIntervalMilliseconds => VotingIntervalMinutes * 60_000;
     [YamlIgnore] public int VotingDurationMilliseconds => VotingDurationSeconds * 1000;
     [YamlIgnore] public int TransitionDurationMilliseconds => TransitionDurationMinutes * 60_000;
-    [YamlIgnore] public List<VotingTrackType> VotingTrackTypes => AvailableTracks.Select(t => new VotingTrackType(t)).ToList();
+
+    [YamlIgnore]
+    public List<VotingTrackType> VotingTrackTypes => AvailableTracks.Select(t => new VotingTrackType
+    {
+        Name = t.Name,
+        TrackFolder = t.TrackFolder,
+        TrackLayoutConfig = t.TrackLayoutConfig,
+        CMLink = t.CMLink ?? "",
+        CMVersion = t.CMVersion ?? "",
+    }).ToList();
 }
 
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
