@@ -5,8 +5,12 @@ using YamlDotNet.Serialization;
 namespace VotingTrackPlugin;
 
 [UsedImplicitly(ImplicitUseKindFlags.Assign, ImplicitUseTargetFlags.WithMembers)]
-public class VotingTrackConfiguration : IValidateConfiguration<VotingTrackConfigurationValidator>
+public class VotingTrackConfiguration : NvrliftBaseConfiguration, IValidateConfiguration<VotingTrackConfigurationValidator>
 {
+    public VotingTrackConfiguration()
+    {
+        Track = true;
+    }
     public List<TrackEntry> AvailableTracks { get; init; } = new();
     public int NumChoices { get; init; } = 3;
     public int VotingIntervalMinutes { get; init; } = 90;
