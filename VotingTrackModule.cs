@@ -14,6 +14,6 @@ public class VotingTrackModule : AssettoServerModule<VotingTrackConfiguration>
         builder.RegisterType<TrackManager>().AsSelf().SingleInstance();
         builder.RegisterType<ContentManagerImplementation>().AsSelf().SingleInstance();
         
-        builder.RegisterType<VotingTrack>().AsSelf().As<IAssettoServerAutostart>().SingleInstance();
+        builder.RegisterType<VotingTrackPlugin>().AsSelf().As<IAssettoServerAutostart>().SingleInstance();
     }
 }

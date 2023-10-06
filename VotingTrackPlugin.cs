@@ -10,7 +10,7 @@ using Serilog;
 
 namespace VotingTrackPlugin;
 
-public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
+public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutostart
 {
     private readonly EntryCarManager _entryCarManager;
     private readonly TrackManager _trackManager;
@@ -29,26 +29,29 @@ public class VotingTrack : CriticalBackgroundService, IAssettoServerAutostart
         public int Votes { get; set; }
     }
 
-    public VotingTrack(VotingTrackConfiguration configuration, ACServerConfiguration acServerConfiguration, EntryCarManager entryCarManager, TrackManager trackManager, IHostApplicationLifetime applicationLifetime) : base(applicationLifetime)
+    public VotingTrackPlugin(VotingTrackConfiguration configuration, ACServerConfiguration acServerConfiguration, EntryCarManager entryCarManager, TrackManager trackManager, IHostApplicationLifetime applicationLifetime) : base(applicationLifetime)
     {
         _configuration = configuration;
         _entryCarManager = entryCarManager;
         _trackManager = trackManager;
         
         _tracks = _configuration.VotingTrackTypes;
-        
-        _trackManager.SetTrack(new TrackData(new VotingTrackType()
+
+        VotingTrackType startType = new()
         {
-            Name = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track 
-                                                              && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)?.Name 
+            Name = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track
+                                               && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)?.Name
                    ?? acServerConfiguration.Server.Track.Split('/').Last(),
             TrackFolder = acServerConfiguration.Server.Track,
             TrackLayoutConfig = acServerConfiguration.Server.TrackConfig,
-            CMLink = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track 
-                                                 && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)?.CMLink ?? "",
-            CMVersion = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track 
-                                                    && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)?.CMVersion ?? ""
-        }, null)
+            CMLink = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track
+                                                 && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)
+                ?.CMLink ?? "",
+            CMVersion = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track
+                                                    && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)
+                ?.CMVersion ?? ""
+        };
+        _trackManager.SetTrack(new TrackData(startType, null)
         {
             IsInit = true,
             UpdateContentManager = _configuration.UpdateContentManager,

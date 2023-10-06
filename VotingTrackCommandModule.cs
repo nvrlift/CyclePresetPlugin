@@ -7,9 +7,9 @@ namespace VotingTrackPlugin;
 
 public class VotingTrackCommandModule : ACModuleBase
 {
-    private readonly VotingTrack _votingTrack;
+    private readonly VotingTrackPlugin _votingTrack;
 
-    public VotingTrackCommandModule(VotingTrack votingTrack)
+    public VotingTrackCommandModule(VotingTrackPlugin votingTrack)
     {
         _votingTrack = votingTrack;
     }

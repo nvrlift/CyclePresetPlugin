@@ -9,7 +9,7 @@ public class VotingTrackType : ITrackBaseType
     public string TrackLayoutConfig { get; set; }
     public string CMLink { get; set; }
     public string CMVersion { get; set; }
-    public VotingTrackType(TrackEntry input, string name, string trackFolder, string trackLayoutConfig, string cmLink, string cmVersion)
+    public VotingTrackType(TrackEntry input)
     {
         Name = input.Name;
         TrackFolder = input.TrackFolder;
