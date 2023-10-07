@@ -26,6 +26,12 @@ public class VotingTrackCommandModule : ACModuleBase
         _votingTrack.ListAllTracks(Context.Client!);
     }
 
+    [Command("currenttrack"), RequireConnectedPlayer]
+    public void GetCurrentTrack()
+    {
+        _votingTrack.GetTrack(Context.Client!);
+    }
+
     [Command("admintrackset"), RequireAdmin]
     public void AdminTrackSet(int choice)
     {

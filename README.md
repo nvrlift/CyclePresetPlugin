@@ -16,6 +16,9 @@ Example configuration (add to bottom of `extra_cfg.yml`)
 ```yaml
 ---
 !VotingTrackConfiguration
+# Should content manager download links be updated
+ContentManager: true
+Restart: WindowsFile # yet to implement ->Docker
 # Number of choices players can choose from at each voting interval
 NumChoices: 3
 # How long the vote stays open
@@ -27,8 +30,6 @@ VotingIntervalMinutes: 90
 # How often a vote takes place
 # Minimum 1, Default 5
 TransitionDurationMinutes: 10
-# Should content manager download links be updated
-UpdateContentManager: true
 # Tracks that can be voted on
 # CM field only required with UpdateContentManager: true
 AvailableTracks:

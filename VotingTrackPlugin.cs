@@ -56,7 +56,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         _trackManager.SetTrack(new TrackData(startType, null)
         {
             IsInit = true,
-            UpdateContentManager = _configuration.UpdateContentManager,
+            ContentManager = _configuration.ContentManager,
             TransitionDuration = 0
         });
     }
@@ -71,6 +71,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
                 stoppingToken);
             try
             {
+                Log.Information($"Starting track vote.");
                 await UpdateAsync(stoppingToken);
             }
             catch (TaskCanceledException)
@@ -94,12 +95,19 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         }
     }
 
+    internal void GetTrack(ACTcpClient client)
+    {
+        Log.Information($"Current track: {_trackManager.CurrentTrack.Type!.Name } - {_trackManager.CurrentTrack.Type!.TrackFolder }");
+        client.SendPacket(new ChatMessage { SessionId = 255, Message = $"Current track: {_trackManager.CurrentTrack.Type!.Name } - {_trackManager.CurrentTrack.Type!.TrackFolder }" });
+    }
+
     internal void SetTrack(ACTcpClient client, int choice)
     {
         var last = _trackManager.CurrentTrack;
 
         if (choice < 0 && choice >= _tracks.Count)
         {
+            Log.Information($"Invalid track choice.");
             client.SendPacket(new ChatMessage { SessionId = 255, Message = "Invalid track choice." });
 
             return;
@@ -107,8 +115,9 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
 
         var next = _tracks[choice];
 
-        if (last.Type == next)
+        if (last.Type!.Equals(next))
         {
+            Log.Information($"No change made, admin tried setting the current track.");
             client.SendPacket(new ChatMessage
                 { SessionId = 255, Message = $"No change made, you tried setting the current track." });
         }
@@ -117,7 +126,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             _adminTrack = new TrackData(_trackManager.CurrentTrack.Type, next)
             {
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
-                UpdateContentManager = _configuration.UpdateContentManager
+                ContentManager = _configuration.ContentManager
             };
             _adminTrackChange = true;
         }
@@ -182,7 +191,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         var winner = tracks[Random.Shared.Next(tracks.Count)];
 
 
-        if (last.Type == winner)
+        if (last.Type!.Equals(winner!))
         {
             _entryCarManager.BroadcastPacket(new ChatMessage
             {
@@ -205,7 +214,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             _trackManager.SetTrack(new TrackData(last.Type, winner)
             {
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
-                UpdateContentManager = _configuration.UpdateContentManager
+                ContentManager = _configuration.ContentManager
             });
         }
     }
@@ -218,19 +227,20 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             {
                 if (_adminTrackChange)
                 {
-                    _entryCarManager.BroadcastPacket(new ChatMessage
-                        { SessionId = 255, Message = $"Next track: {_adminTrack!.UpcomingType!.Name}" });
-                    _entryCarManager.BroadcastPacket(new ChatMessage
+                    if (_adminTrack != null && !_adminTrack.Type!.Equals(_adminTrack.UpcomingType!))
                     {
-                        SessionId = 255,
-                        Message = $"Track will change in {_configuration.TransitionDurationMinutes} minutes."
-                    });
+                        Log.Information($"Next track: {_adminTrack!.UpcomingType!.Name}");
+                        _entryCarManager.BroadcastPacket(new ChatMessage
+                            { SessionId = 255, Message = $"Next track: {_adminTrack!.UpcomingType!.Name}" });
+                        _entryCarManager.BroadcastPacket(new ChatMessage
+                        {
+                            SessionId = 255,
+                            Message = $"Track will change in {_configuration.TransitionDurationMinutes} minutes."
+                        });
 
-                    // Delay the track switch by configured time delay
-                    await Task.Delay(_configuration.TransitionDurationMinutes, stoppingToken);
+                        // Delay the track switch by configured time delay
+                        await Task.Delay(_configuration.TransitionDurationMinutes, stoppingToken);
 
-                    if (_adminTrack != null)
-                    {
                         _adminTrackChange = false;
                         _trackManager.SetTrack(_adminTrack);
                         _adminTrack = null;
@@ -246,7 +256,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             }
             finally
             {
-                await Task.Delay(60_000, stoppingToken);
+                await Task.Delay(1000, stoppingToken);
             }
         }
     }
