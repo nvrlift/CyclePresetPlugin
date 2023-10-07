@@ -97,8 +97,14 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
 
     internal void GetTrack(ACTcpClient client)
     {
-        Log.Information($"Current track: {_trackManager.CurrentTrack.Type!.Name } - {_trackManager.CurrentTrack.Type!.TrackFolder }");
-        client.SendPacket(new ChatMessage { SessionId = 255, Message = $"Current track: {_trackManager.CurrentTrack.Type!.Name } - {_trackManager.CurrentTrack.Type!.TrackFolder }" });
+        Log.Information(
+            $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.TrackFolder}");
+        client.SendPacket(new ChatMessage
+        {
+            SessionId = 255,
+            Message =
+                $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.TrackFolder}"
+        });
     }
 
     internal void SetTrack(ACTcpClient client, int choice)
