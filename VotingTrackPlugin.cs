@@ -87,7 +87,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
 
     internal void ListAllTracks(ACTcpClient client)
     {
-        client.SendPacket(new ChatMessage { SessionId = 255, Message = "Vote for next track:" });
+        client.SendPacket(new ChatMessage { SessionId = 255, Message = "List of all tracks:" });
         for (int i = 0; i < _tracks.Count; i++)
         {
             var track = _tracks[i];
@@ -97,8 +97,14 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
 
     internal void GetTrack(ACTcpClient client)
     {
-        Log.Information($"Current track: {_trackManager.CurrentTrack.Type!.Name } - {_trackManager.CurrentTrack.Type!.TrackFolder }");
-        client.SendPacket(new ChatMessage { SessionId = 255, Message = $"Current track: {_trackManager.CurrentTrack.Type!.Name } - {_trackManager.CurrentTrack.Type!.TrackFolder }" });
+        Log.Information(
+            $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.TrackFolder}");
+        client.SendPacket(new ChatMessage
+        {
+            SessionId = 255,
+            Message =
+                $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.TrackFolder}"
+        });
     }
 
     internal void SetTrack(ACTcpClient client, int choice)
@@ -209,7 +215,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             });
 
             // Delay the track switch by configured time delay
-            await Task.Delay(_configuration.TransitionDurationMinutes, stoppingToken);
+            await Task.Delay(_configuration.TransitionDurationMilliseconds, stoppingToken);
 
             _trackManager.SetTrack(new TrackData(last.Type, winner)
             {
@@ -239,7 +245,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
                         });
 
                         // Delay the track switch by configured time delay
-                        await Task.Delay(_configuration.TransitionDurationMinutes, stoppingToken);
+                        await Task.Delay(_configuration.TransitionDurationMilliseconds, stoppingToken);
 
                         _adminTrackChange = false;
                         _trackManager.SetTrack(_adminTrack);

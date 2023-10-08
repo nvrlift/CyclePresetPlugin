@@ -4,6 +4,8 @@ Plugin to let players vote for a server weather at a specified interval.
 
 ## Configuration
 
+Requires AS-Restarter.exe from [nvrlift.AssettoServer.HostExtension](https://github.com/nvrlift/nvrlift.AssettoServer.HostExtension)
+
 Enable the plugin in `extra_cfg.yml`
 
 ```yaml
@@ -33,7 +35,7 @@ TransitionDurationMinutes: 10
 # Tracks that can be voted on
 # CM field only required with UpdateContentManager: true
 AvailableTracks:
-- { Name: Gunsai, TrackFolder: some/path/to/gunsai, TrackLayoutConfig: GunsaiTogue, CMLink: https://mega.nz/...... , CMVersion: 1.5 }
-- { Name: Shutoko, TrackFolder: some/path/to/Shutoko, TrackLayoutConfig: Default, CMLink: https://mega.nz/...... , CMVersion: 1.5 }
+- { Name: Gunsai, TrackFolder: csp/0/../pk_gunma_cycle_sports_center, TrackLayoutConfig: gcsc_full_attack, CMLink: https://mega.nz/...... , CMVersion: 1.5 }
+- { Name: Shutoko, TrackFolder: csp/0/../shuto_revival_project_beta, TrackLayoutConfig: overload_layout, CMLink: https://mega.nz/...... , CMVersion: 1.5 }
 
 ```
