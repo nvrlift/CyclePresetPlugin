@@ -146,7 +146,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             return;
         }
 
-        if (choice >= _configuration.NumChoices || choice < 0)
+        if (choice >= _availableTracks.Count || choice < 0)
         {
             client.SendPacket(new ChatMessage { SessionId = 255, Message = "Invalid choice." });
             return;
