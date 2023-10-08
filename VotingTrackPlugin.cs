@@ -199,7 +199,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         var winner = tracks[Random.Shared.Next(tracks.Count)];
 
 
-        if (last.Type!.Equals(winner!))
+        if (last.Type!.Equals(winner!) || maxVotes == 0)
         {
             _entryCarManager.BroadcastPacket(new ChatMessage
             {
