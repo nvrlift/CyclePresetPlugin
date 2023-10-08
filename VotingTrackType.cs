@@ -14,7 +14,7 @@ public class VotingTrackType : ITrackBaseType
     {
         Name = input.Name;
         TrackFolder = input.TrackFolder;
-        TrackLayoutConfig = input.TrackLayoutConfig;
+        TrackLayoutConfig = input.TrackLayoutConfig ?? "";
         CMLink = input.CMLink ?? "";
         CMVersion = input.CMVersion ?? "";
     }
