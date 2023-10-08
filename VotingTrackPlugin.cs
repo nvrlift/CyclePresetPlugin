@@ -179,6 +179,8 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = "Vote for next track:" });
         for (int i = 0; i < _configuration.NumChoices; i++)
         {
+            if (tracksLeft.Count < 1)
+                break;
             var nextTrack = tracksLeft[Random.Shared.Next(tracksLeft.Count)];
             _availableTracks.Add(new TrackChoice { Track = nextTrack, Votes = 0 });
             tracksLeft.Remove(nextTrack);
