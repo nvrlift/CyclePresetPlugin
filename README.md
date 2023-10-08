@@ -2,6 +2,18 @@
 
 Plugin to let players vote for a server weather at a specified interval.
 
+## Commands
+
+/currenttrack
+
+/votetrack <number> (server will ask users to vote for new map as per configured timeframe)
+### Admin commands
+/restartserver
+
+/admintracklist
+
+/admintrackset <number> (this one will be explained by track list)
+
 ## Configuration
 
 Requires AS-Restarter.exe from [nvrlift.AssettoServer.HostExtension](https://github.com/nvrlift/nvrlift.AssettoServer.HostExtension)
