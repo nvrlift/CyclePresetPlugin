@@ -26,7 +26,7 @@ public class VotingTrackConfiguration : NvrliftBaseConfiguration, IValidateConfi
     {
         Name = t.Name,
         TrackFolder = t.TrackFolder,
-        TrackLayoutConfig = t.TrackLayoutConfig,
+        TrackLayoutConfig = t.TrackLayoutConfig ?? "",
         CMLink = t.CMLink ?? "",
         CMVersion = t.CMVersion ?? "",
     }).ToList();
@@ -37,7 +37,7 @@ public struct TrackEntry
 {
     public string Name { get; init; }
     public string TrackFolder { get; init; }
-    public string TrackLayoutConfig { get; init; }
+    public string? TrackLayoutConfig { get; init; }
     public string? CMLink { get; init; }
     public string? CMVersion { get; init; }
 }

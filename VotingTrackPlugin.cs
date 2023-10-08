@@ -45,7 +45,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
                                                && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)?.Name
                    ?? acServerConfiguration.Server.Track.Split('/').Last(),
             TrackFolder = acServerConfiguration.Server.Track,
-            TrackLayoutConfig = acServerConfiguration.Server.TrackConfig,
+            TrackLayoutConfig = acServerConfiguration.Server.TrackConfig ?? "",
             CMLink = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track
                                                  && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)
                 ?.CMLink ?? "",
