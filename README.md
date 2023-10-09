@@ -1,6 +1,6 @@
 ﻿# VotingTrackPlugin
 
-Plugin to let players vote for a server weather at a specified interval.
+Plugin to let players vote for a server track at a specified interval.
 
 ## Commands
 
