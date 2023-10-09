@@ -1,6 +1,6 @@
 ﻿# VotingTrackPlugin
 
-Plugin to let players vote for a server weather at a specified interval.
+Plugin to let players vote for a server track at a specified interval.
 
 ## Commands
 
@@ -16,7 +16,7 @@ Plugin to let players vote for a server weather at a specified interval.
 
 ## Configuration
 
-Requires AS-Restarter.exe from [nvrlift.AssettoServer.HostExtension](https://github.com/nvrlift/nvrlift.AssettoServer.HostExtension)
+v1.1 requires AS-Restarter.exe from [nvrlift.AssettoServer.HostExtension](https://github.com/nvrlift/nvrlift.AssettoServer.HostExtension)
 
 Enable the plugin in `extra_cfg.yml`
 
@@ -32,7 +32,8 @@ Example configuration (add to bottom of `extra_cfg.yml`)
 !VotingTrackConfiguration
 # Should content manager download links be updated
 ContentManager: true
-Restart: WindowsFile # yet to implement ->Docker
+# Change Track randomly even if no one votes.
+ChangeTrackWithoutVotes: true
 # Number of choices players can choose from at each voting interval
 NumChoices: 3
 # How long the vote stays open

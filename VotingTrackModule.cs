@@ -1,5 +1,6 @@
 ﻿using AssettoServer.Server.Plugin;
 using Autofac;
+using Microsoft.Extensions.DependencyInjection;
 using nvrlift.AssettoServer.ContentManager;
 using nvrlift.AssettoServer.Restart;
 using nvrlift.AssettoServer.Track;
