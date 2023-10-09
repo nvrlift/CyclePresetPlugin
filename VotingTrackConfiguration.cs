@@ -7,10 +7,6 @@ namespace VotingTrackPlugin;
 [UsedImplicitly(ImplicitUseKindFlags.Assign, ImplicitUseTargetFlags.WithMembers)]
 public class VotingTrackConfiguration : NvrliftBaseConfiguration, IValidateConfiguration<VotingTrackConfigurationValidator>
 {
-    public VotingTrackConfiguration()
-    {
-        Track = true;
-    }
     public List<TrackEntry> AvailableTracks { get; init; } = new();
     public int NumChoices { get; init; } = 3;
     public int VotingIntervalMinutes { get; init; } = 90;
@@ -26,10 +22,7 @@ public class VotingTrackConfiguration : NvrliftBaseConfiguration, IValidateConfi
     public List<VotingTrackType> VotingTrackTypes => AvailableTracks.Select(t => new VotingTrackType
     {
         Name = t.Name,
-        TrackFolder = t.TrackFolder,
-        TrackLayoutConfig = t.TrackLayoutConfig ?? "",
-        CMLink = t.CMLink ?? "",
-        CMVersion = t.CMVersion ?? "",
+        PresetFolder = t.PresetFolder,
     }).ToList();
 }
 
@@ -37,8 +30,5 @@ public class VotingTrackConfiguration : NvrliftBaseConfiguration, IValidateConfi
 public struct TrackEntry
 {
     public string Name { get; init; }
-    public string TrackFolder { get; init; }
-    public string? TrackLayoutConfig { get; init; }
-    public string? CMLink { get; init; }
-    public string? CMVersion { get; init; }
+    public string PresetFolder { get; init; }
 }

@@ -44,22 +44,13 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
 
         VotingTrackType startType = new()
         {
-            Name = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track
-                                               && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)?.Name
+            Name = _tracks.FirstOrDefault(t => t.PresetFolder == acServerConfiguration.BaseFolder)?.Name
                    ?? acServerConfiguration.Server.Track.Split('/').Last(),
-            TrackFolder = acServerConfiguration.Server.Track,
-            TrackLayoutConfig = acServerConfiguration.Server.TrackConfig ?? "",
-            CMLink = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track
-                                                 && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)
-                ?.CMLink ?? "",
-            CMVersion = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track
-                                                    && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)
-                ?.CMVersion ?? ""
+            PresetFolder = acServerConfiguration.BaseFolder,
         };
         _trackManager.SetTrack(new TrackData(startType, null)
         {
             IsInit = true,
-            ContentManager = _configuration.ContentManager,
             TransitionDuration = 0
         });
         
@@ -113,12 +104,12 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
     internal void GetTrack(ACTcpClient client)
     {
         Log.Information(
-            $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.TrackFolder}");
+            $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.PresetFolder}");
         client.SendPacket(new ChatMessage
         {
             SessionId = 255,
             Message =
-                $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.TrackFolder}"
+                $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.PresetFolder}"
         });
     }
 
@@ -147,7 +138,6 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             _adminTrack = new TrackData(_trackManager.CurrentTrack.Type, next)
             {
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
-                ContentManager = _configuration.ContentManager
             };
             _adminTrackChange = true;
         }
@@ -237,7 +227,6 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             _trackManager.SetTrack(new TrackData(last.Type, winner)
             {
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
-                ContentManager = _configuration.ContentManager
             });
         }
     }

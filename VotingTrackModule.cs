@@ -1,7 +1,6 @@
 ﻿using AssettoServer.Server.Plugin;
 using Autofac;
 using Microsoft.Extensions.DependencyInjection;
-using nvrlift.AssettoServer.ContentManager;
 using nvrlift.AssettoServer.Restart;
 using nvrlift.AssettoServer.Track;
 
@@ -15,7 +14,6 @@ public class VotingTrackModule : AssettoServerModule<VotingTrackConfiguration>
         builder.RegisterType<WindowsFileRestartImplementation>().As<IRestartImplementation>().SingleInstance();
         builder.RegisterType<TrackImplementation>().AsSelf().SingleInstance();
         builder.RegisterType<TrackManager>().AsSelf().SingleInstance();
-        builder.RegisterType<ContentManagerImplementation>().AsSelf().SingleInstance();
         
         builder.RegisterType<VotingTrackPlugin>().AsSelf().As<IAssettoServerAutostart>().SingleInstance();
     }
