@@ -43,7 +43,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         _trackManager = trackManager;
         _trackManager.SetRestartType(_configuration.Restart);
 
-        _tracks = presetConfigurationManager.VotingPresetTypes; // TODO fill from config files
+        _tracks = presetConfigurationManager.VotingPresetTypes;
 
         PresetConfiguration startConfiguration = new() // Read from file
         {
@@ -87,10 +87,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             {
                 Log.Error(ex, "Error during voting track update");
             }
-            finally
-            {
-                StartVoteCts = new CancellationTokenSource();
-            }
+            finally { }
         }
     }
 

@@ -60,6 +60,7 @@ Something like `Shutoko_low_bhp` or `LA_Canyon_hypercars`... You get the Idea.
 Within each of those folders you now have to change the `server_cfg.ini` to feature the correct `TRACK` and `TRACK_LAYOUT`.
 You can also just use the `cfg` folder of newly created presets from ContentManager.
 Add the following file to each `presets` folder and change the values accordingly: `preset_cfg.yml`
+Add this file into `cfg` as well.
 ```yaml  
 # The name of the Track; You will see this when voting
 Name: Shutoko Cut Up
