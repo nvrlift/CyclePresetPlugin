@@ -28,7 +28,7 @@ public class VotingTrackCommandModule : ACModuleBase
     [Command("admintrackvotestart"), RequireAdmin]
     public void AdminTrackVoteStart()
     {
-        _votingTrack.StartVoteCts.Cancel();
+        _votingTrack.StartVote();
     }
 
     [Command("admintracklist"), RequireAdmin]
