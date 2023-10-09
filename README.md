@@ -30,8 +30,6 @@ Example configuration (add to bottom of `extra_cfg.yml`)
 ```yaml
 ---
 !VotingTrackConfiguration
-# Should content manager download links be updated
-ContentManager: true
 Restart: WindowsFile # yet to implement ->Docker
 # Number of choices players can choose from at each voting interval
 NumChoices: 3
@@ -44,10 +42,14 @@ VotingIntervalMinutes: 90
 # How often a vote takes place
 # Minimum 1, Default 5
 TransitionDurationMinutes: 10
+# Will track change randomly if no vote has been counted
+ChangeTrackWithoutVotes: true
+# Whether the current track should be part of the next vote, so no map change occurs.
+IncludeStayOnTrackVote: true
 # Tracks that can be voted on
 # CM field only required with UpdateContentManager: true
 AvailableTracks:
-- { Name: Gunsai, TrackFolder: csp/0/../pk_gunma_cycle_sports_center, TrackLayoutConfig: gcsc_full_attack, CMLink: https://mega.nz/...... , CMVersion: 1.5 }
-- { Name: Shutoko, TrackFolder: csp/0/../shuto_revival_project_beta, TrackLayoutConfig: overload_layout, CMLink: https://mega.nz/...... , CMVersion: 1.5 }
+- { Name: Gunsai, PresetFolder: Gunsai }
+- { Name: Shutoko, PresetFolder: Shutoko }
 
 ```

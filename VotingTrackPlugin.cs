@@ -6,6 +6,7 @@ using AssettoServer.Server.Plugin;
 using AssettoServer.Shared.Network.Packets.Shared;
 using AssettoServer.Shared.Services;
 using Microsoft.Extensions.Hosting;
+using nvrlift.AssettoServer.Preset;
 using nvrlift.AssettoServer.Track;
 using Serilog;
 
@@ -18,7 +19,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
     private readonly VotingTrackConfiguration _configuration;
     private readonly List<ACTcpClient> _alreadyVoted = new();
     private readonly List<TrackChoice> _availableTracks = new();
-    private readonly List<VotingTrackType> _tracks;
+    private readonly List<PresetType> _tracks;
 
     private bool _votingOpen = false;
     private bool _adminTrackChange = false;
@@ -28,31 +29,33 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
 
     private class TrackChoice
     {
-        public VotingTrackType? Track { get; init; }
+        public PresetType? Track { get; init; }
         public int Votes { get; set; }
     }
 
-    public VotingTrackPlugin(VotingTrackConfiguration configuration, ACServerConfiguration acServerConfiguration,
+    public VotingTrackPlugin(VotingTrackConfiguration configuration, PresetConfigurationManager presetConfigurationManager, 
+        ACServerConfiguration acServerConfiguration,
         EntryCarManager entryCarManager, TrackManager trackManager,
         IHostApplicationLifetime applicationLifetime, CSPServerScriptProvider scriptProvider) : base(applicationLifetime)
     {
         _configuration = configuration;
         _entryCarManager = entryCarManager;
         _trackManager = trackManager;
+        _trackManager.SetRestartType(_configuration.Restart);
 
-        _tracks = _configuration.VotingTrackTypes;
+        _tracks = presetConfigurationManager.PresetTypes; // TODO fill from config files
 
-        VotingTrackType startType = new()
+        PresetConfiguration startConfiguration = new() // Read from file
         {
             Name = _tracks.FirstOrDefault(t => t.PresetFolder == acServerConfiguration.BaseFolder)?.Name
                    ?? acServerConfiguration.Server.Track.Split('/').Last(),
             PresetFolder = acServerConfiguration.BaseFolder,
         };
-        _trackManager.SetTrack(new TrackData(startType, null)
+        _trackManager.SetTrack(new TrackData(presetConfigurationManager.CurrentConfiguration.ToPresetType(), null)
         {
             IsInit = true,
             TransitionDuration = 0
-        });
+        }, configuration.Restart);
         
         // Include Client Reconnection Script
         using var streamReader = new StreamReader(Assembly.GetExecutingAssembly()
@@ -179,8 +182,26 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         _availableTracks.Clear();
         _alreadyVoted.Clear();
 
-        var tracksLeft = new List<VotingTrackType>(_tracks);
+        var tracksLeft = new List<PresetType>(_tracks);
 
+        // Add current track to "Stay on track"
+        if (_configuration.IncludeStayOnTrackVote)
+        {
+            _availableTracks.Add(new TrackChoice
+            {
+                Track = new PresetType
+                {
+                    Name = "Stay on current track",
+                    PresetFolder = last.Type!.PresetFolder
+                }
+            });
+            tracksLeft.Remove(new PresetType
+            {
+                Name = last.Type.Name,
+                PresetFolder = last.Type.PresetFolder
+            });
+        }
+        
         _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = "Vote for next track:" });
         for (int i = 0; i < _configuration.NumChoices; i++)
         {
@@ -199,7 +220,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         _votingOpen = false;
 
         int maxVotes = _availableTracks.Max(w => w.Votes);
-        List<VotingTrackType?> tracks = _availableTracks.Where(w => w.Votes == maxVotes).Select(w => w.Track).ToList();
+        List<PresetType?> tracks = _availableTracks.Where(w => w.Votes == maxVotes).Select(w => w.Track).ToList();
 
         var winner = tracks[Random.Shared.Next(tracks.Count)];
 
@@ -227,7 +248,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             _trackManager.SetTrack(new TrackData(last.Type, winner)
             {
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
-            });
+            }, _configuration.Restart);
         }
     }
 
@@ -254,7 +275,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
                         await Task.Delay(_configuration.TransitionDurationMilliseconds, stoppingToken);
 
                         _adminTrackChange = false;
-                        _trackManager.SetTrack(_adminTrack);
+                        _trackManager.SetTrack(_adminTrack, _configuration.Restart);
                         _adminTrack = null;
                     }
                 }
