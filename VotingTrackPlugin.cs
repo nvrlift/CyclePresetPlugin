@@ -43,7 +43,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         _trackManager = trackManager;
         _trackManager.SetRestartType(_configuration.Restart);
 
-        _tracks = presetConfigurationManager.PresetTypes; // TODO fill from config files
+        _tracks = presetConfigurationManager.VotingPresetTypes; // TODO fill from config files
 
         PresetConfiguration startConfiguration = new() // Read from file
         {

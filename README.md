@@ -46,10 +46,28 @@ TransitionDurationMinutes: 10
 ChangeTrackWithoutVotes: true
 # Whether the current track should be part of the next vote, so no map change occurs.
 IncludeStayOnTrackVote: true
-# Tracks that can be voted on
-# CM field only required with UpdateContentManager: true
-AvailableTracks:
-- { Name: Gunsai, PresetFolder: Gunsai }
-- { Name: Shutoko, PresetFolder: Shutoko }
+```
 
+### Presets
+
+Create a folder `presets` in the directory of `AssettoServer.exe`.
+
+Create copies of the `cfg` folder within the `presets` folder.
+
+Rename the copies of the `cfg` folder to something that represents the preset you are creating.
+Something like `Shutoko_low_bhp` or `LA_Canyon_hypercars`... You get the Idea.
+
+Within each of those folders you now have to change the `server_cfg.ini` to feature the correct `TRACK` and `TRACK_LAYOUT`.
+You can also just use the `cfg` folder of newly created presets from ContentManager.
+Add the following file to each `presets` folder and change the values accordingly: `preset_cfg.yml`
+```yaml  
+# The name of the Track; You will see this when voting
+Name: Shutoko Cut Up
+# Settings for Plugin features.
+# Set Enabled to false, to exclude the Preset from Plugin Track lists
+RandomTrack:
+  Weight: 1.0
+  Enabled: false;
+VotingTrack:
+  Enabled: true;
 ```
