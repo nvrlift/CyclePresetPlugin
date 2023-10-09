@@ -1,4 +1,5 @@
-﻿using AssettoServer.Network.Tcp;
+﻿using System.Reflection;
+using AssettoServer.Network.Tcp;
 using AssettoServer.Server;
 using AssettoServer.Server.Configuration;
 using AssettoServer.Server.Plugin;
@@ -22,6 +23,8 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
     private bool _votingOpen = false;
     private bool _adminTrackChange = false;
     private TrackData? _adminTrack = null;
+    private  CancellationToken _manualVoteCancellationToken; 
+    public CancellationTokenSource StartVoteCts = new CancellationTokenSource();
 
     private class TrackChoice
     {
@@ -31,7 +34,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
 
     public VotingTrackPlugin(VotingTrackConfiguration configuration, ACServerConfiguration acServerConfiguration,
         EntryCarManager entryCarManager, TrackManager trackManager,
-        IHostApplicationLifetime applicationLifetime) : base(applicationLifetime)
+        IHostApplicationLifetime applicationLifetime, CSPServerScriptProvider scriptProvider) : base(applicationLifetime)
     {
         _configuration = configuration;
         _entryCarManager = entryCarManager;
@@ -59,6 +62,11 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             ContentManager = _configuration.ContentManager,
             TransitionDuration = 0
         });
+        
+        // Include Client Reconnection Script
+        using var streamReader = new StreamReader(Assembly.GetExecutingAssembly()
+            .GetManifestResourceStream("VotingTrackPlugin.lua.reconnectclient.lua")!);
+        scriptProvider.AddScript(streamReader.ReadToEnd(), "reconnectclient.lua");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -67,8 +75,12 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(_configuration.VotingIntervalMilliseconds - _configuration.VotingDurationMilliseconds,
-                stoppingToken);
+            _manualVoteCancellationToken = StartVoteCts.Token;
+            
+            using (CancellationTokenSource linkedCts =
+                CancellationTokenSource.CreateLinkedTokenSource(_manualVoteCancellationToken, stoppingToken))
+                await Task.Delay(_configuration.VotingIntervalMilliseconds - _configuration.VotingDurationMilliseconds,
+                    linkedCts.Token);
             try
             {
                 Log.Information($"Starting track vote.");
@@ -81,7 +93,10 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             {
                 Log.Error(ex, "Error during voting track update");
             }
-            // finally { }
+            finally
+            {
+                StartVoteCts = new CancellationTokenSource();
+            }
         }
     }
 
@@ -199,7 +214,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         var winner = tracks[Random.Shared.Next(tracks.Count)];
 
 
-        if (last.Type!.Equals(winner!) || maxVotes == 0)
+        if (last.Type!.Equals(winner!) || (maxVotes == 0 && !_configuration.ChangeTrackWithoutVotes))
         {
             _entryCarManager.BroadcastPacket(new ChatMessage
             {

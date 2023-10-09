@@ -30,4 +30,10 @@
         -->
     </ItemGroup>
 
+
+    <ItemGroup>
+        <None Remove="lua\reconnectclient.lua" />
+        <EmbeddedResource Include="lua\reconnectclient.lua" />
+    </ItemGroup>
+
 </Project>
