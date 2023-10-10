@@ -4,3 +4,11 @@ local serverReconnectEvent = ac.OnlineEvent({ message = ac.StructItem.string(16)
         return true
     end
 end)
+
+
+function sleep(n)
+    local t = os.clock()
+    while os.clock() - t <= n do
+        -- nothing
+    end
+end
