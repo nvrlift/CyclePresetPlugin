@@ -19,7 +19,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
     private readonly VotingTrackConfiguration _configuration;
     private readonly List<ACTcpClient> _alreadyVoted = new();
     private readonly List<TrackChoice> _availableTracks = new();
-    private readonly List<PresetType> _tracks;
+    private readonly List<PresetType> _voteTracks;
     private readonly List<PresetType> _adminTracks;
 
     private bool _votingOpen = false;
@@ -43,7 +43,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         _trackManager = trackManager;
         _trackManager.SetRestartType(_configuration.Restart);
 
-        _tracks = presetConfigurationManager.VotingPresetTypes;
+        _voteTracks = presetConfigurationManager.VotingPresetTypes;
         _adminTracks = presetConfigurationManager.AllPresetTypes;
         
         _trackManager.SetTrack(new TrackData(presetConfigurationManager.CurrentConfiguration.ToPresetType(), null)
@@ -176,7 +176,9 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         _availableTracks.Clear();
         _alreadyVoted.Clear();
 
-        var tracksLeft = new List<PresetType>(_tracks);
+        if (_voteTracks.Count == 0) return;
+
+        var tracksLeft = new List<PresetType>(_voteTracks);
 
         _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = "Vote for next track:" });
         
