@@ -6,6 +6,7 @@ using AssettoServer.Server.Plugin;
 using AssettoServer.Shared.Network.Packets.Shared;
 using AssettoServer.Shared.Services;
 using Microsoft.Extensions.Hosting;
+using nvrlift.AssettoServer.Preset;
 using nvrlift.AssettoServer.Track;
 using Serilog;
 
@@ -18,50 +19,38 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
     private readonly VotingTrackConfiguration _configuration;
     private readonly List<ACTcpClient> _alreadyVoted = new();
     private readonly List<TrackChoice> _availableTracks = new();
-    private readonly List<VotingTrackType> _tracks;
+    private readonly List<PresetType> _voteTracks;
+    private readonly List<PresetType> _adminTracks;
 
     private bool _votingOpen = false;
     private bool _adminTrackChange = false;
     private TrackData? _adminTrack = null;
-    private  CancellationToken _manualVoteCancellationToken; 
-    public CancellationTokenSource StartVoteCts = new CancellationTokenSource();
+    private bool _manualTrackChange = false; 
 
     private class TrackChoice
     {
-        public VotingTrackType? Track { get; init; }
+        public PresetType? Track { get; init; }
         public int Votes { get; set; }
     }
 
-    public VotingTrackPlugin(VotingTrackConfiguration configuration, ACServerConfiguration acServerConfiguration,
+    public VotingTrackPlugin(VotingTrackConfiguration configuration, PresetConfigurationManager presetConfigurationManager, 
+        ACServerConfiguration acServerConfiguration,
         EntryCarManager entryCarManager, TrackManager trackManager,
         IHostApplicationLifetime applicationLifetime, CSPServerScriptProvider scriptProvider) : base(applicationLifetime)
     {
         _configuration = configuration;
         _entryCarManager = entryCarManager;
         _trackManager = trackManager;
+        _trackManager.SetRestartType(_configuration.Restart);
 
-        _tracks = _configuration.VotingTrackTypes;
-
-        VotingTrackType startType = new()
-        {
-            Name = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track
-                                               && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)?.Name
-                   ?? acServerConfiguration.Server.Track.Split('/').Last(),
-            TrackFolder = acServerConfiguration.Server.Track,
-            TrackLayoutConfig = acServerConfiguration.Server.TrackConfig ?? "",
-            CMLink = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track
-                                                 && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)
-                ?.CMLink ?? "",
-            CMVersion = _tracks.FirstOrDefault(t => t.TrackFolder == acServerConfiguration.Server.Track
-                                                    && t.TrackLayoutConfig == acServerConfiguration.Server.TrackConfig)
-                ?.CMVersion ?? ""
-        };
-        _trackManager.SetTrack(new TrackData(startType, null)
+        _voteTracks = presetConfigurationManager.VotingPresetTypes;
+        _adminTracks = presetConfigurationManager.AllPresetTypes;
+        
+        _trackManager.SetTrack(new TrackData(presetConfigurationManager.CurrentConfiguration.ToPresetType(), null)
         {
             IsInit = true,
-            ContentManager = _configuration.ContentManager,
             TransitionDuration = 0
-        });
+        }, configuration.Restart);
         
         // Include Client Reconnection Script
         using var streamReader = new StreamReader(Assembly.GetExecutingAssembly()
@@ -72,15 +61,12 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _ = Task.Run(() => ExecuteAdminAsync(stoppingToken), stoppingToken);
+        _ = Task.Run(() => ExecuteManualAsync(stoppingToken), stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            _manualVoteCancellationToken = StartVoteCts.Token;
-            
-            using (CancellationTokenSource linkedCts =
-                CancellationTokenSource.CreateLinkedTokenSource(_manualVoteCancellationToken, stoppingToken))
-                await Task.Delay(_configuration.VotingIntervalMilliseconds - _configuration.VotingDurationMilliseconds,
-                    linkedCts.Token);
+            await Task.Delay(_configuration.VotingIntervalMilliseconds - _configuration.VotingDurationMilliseconds,
+                    stoppingToken);
             try
             {
                 Log.Information($"Starting track vote.");
@@ -93,19 +79,16 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             {
                 Log.Error(ex, "Error during voting track update");
             }
-            finally
-            {
-                StartVoteCts = new CancellationTokenSource();
-            }
+            finally { }
         }
     }
 
     internal void ListAllTracks(ACTcpClient client)
     {
         client.SendPacket(new ChatMessage { SessionId = 255, Message = "List of all tracks:" });
-        for (int i = 0; i < _tracks.Count; i++)
+        for (int i = 0; i < _adminTracks.Count; i++)
         {
-            var track = _tracks[i];
+            var track = _adminTracks[i];
             client.SendPacket(new ChatMessage { SessionId = 255, Message = $" /admintrackset {i} - {track.Name}" });
         }
     }
@@ -113,12 +96,12 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
     internal void GetTrack(ACTcpClient client)
     {
         Log.Information(
-            $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.TrackFolder}");
+            $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.PresetFolder}");
         client.SendPacket(new ChatMessage
         {
             SessionId = 255,
             Message =
-                $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.TrackFolder}"
+                $"Current track: {_trackManager.CurrentTrack.Type!.Name} - {_trackManager.CurrentTrack.Type!.PresetFolder}"
         });
     }
 
@@ -126,7 +109,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
     {
         var last = _trackManager.CurrentTrack;
 
-        if (choice < 0 && choice >= _tracks.Count)
+        if (choice < 0 && choice >= _adminTracks.Count)
         {
             Log.Information($"Invalid track choice.");
             client.SendPacket(new ChatMessage { SessionId = 255, Message = "Invalid track choice." });
@@ -134,7 +117,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             return;
         }
 
-        var next = _tracks[choice];
+        var next = _adminTracks[choice];
 
         if (last.Type!.Equals(next))
         {
@@ -147,7 +130,6 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             _adminTrack = new TrackData(_trackManager.CurrentTrack.Type, next)
             {
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
-                ContentManager = _configuration.ContentManager
             };
             _adminTrackChange = true;
         }
@@ -182,6 +164,11 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             { SessionId = 255, Message = $"Your vote for {votedTrack.Track!.Name} has been counted." });
     }
 
+    internal void StartVote()
+    {
+        _manualTrackChange = true;
+    }
+
     private async Task UpdateAsync(CancellationToken stoppingToken)
     {
         var last = _trackManager.CurrentTrack;
@@ -189,27 +176,57 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         _availableTracks.Clear();
         _alreadyVoted.Clear();
 
-        var tracksLeft = new List<VotingTrackType>(_tracks);
+        if (_voteTracks.Count == 0) return;
+
+        var tracksLeft = new List<PresetType>(_voteTracks);
 
         _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = "Vote for next track:" });
-        for (int i = 0; i < _configuration.NumChoices; i++)
+        
+        // Add current track to "Stay on track"
+        if (_configuration.IncludeStayOnTrackVote)
         {
-            if (tracksLeft.Count < 1)
-                break;
-            var nextTrack = tracksLeft[Random.Shared.Next(tracksLeft.Count)];
-            _availableTracks.Add(new TrackChoice { Track = nextTrack, Votes = 0 });
-            tracksLeft.Remove(nextTrack);
-
+            _availableTracks.Add(new TrackChoice
+            {
+                Track = last.Type
+            });
+            tracksLeft.Remove(last.Type!);
             _entryCarManager.BroadcastPacket(new ChatMessage
-                { SessionId = 255, Message = $" /votetrack {i} - {nextTrack.Name}" });
+                { SessionId = 255, Message = $" /votetrack 0 - Stay on current track." });
+            
+            for (int i = 1; i < _configuration.NumChoices + 1; i++)
+            {
+                if (tracksLeft.Count < 1)
+                    break;
+                var nextTrack = tracksLeft[Random.Shared.Next(tracksLeft.Count)];
+                _availableTracks.Add(new TrackChoice { Track = nextTrack, Votes = 0 });
+                tracksLeft.Remove(nextTrack);
+
+                _entryCarManager.BroadcastPacket(new ChatMessage
+                    { SessionId = 255, Message = $" /votetrack {i} - {nextTrack.Name}" });
+            }
         }
+        else
+        {
+            for (int i = 0; i < _configuration.NumChoices; i++)
+            {
+                if (tracksLeft.Count < 1)
+                    break;
+                var nextTrack = tracksLeft[Random.Shared.Next(tracksLeft.Count)];
+                _availableTracks.Add(new TrackChoice { Track = nextTrack, Votes = 0 });
+                tracksLeft.Remove(nextTrack);
+
+                _entryCarManager.BroadcastPacket(new ChatMessage
+                    { SessionId = 255, Message = $" /votetrack {i} - {nextTrack.Name}" });
+            }
+        }
+        
 
         _votingOpen = true;
         await Task.Delay(_configuration.VotingDurationMilliseconds, stoppingToken);
         _votingOpen = false;
 
         int maxVotes = _availableTracks.Max(w => w.Votes);
-        List<VotingTrackType?> tracks = _availableTracks.Where(w => w.Votes == maxVotes).Select(w => w.Track).ToList();
+        List<PresetType?> tracks = _availableTracks.Where(w => w.Votes == maxVotes).Select(w => w.Track).ToList();
 
         var winner = tracks[Random.Shared.Next(tracks.Count)];
 
@@ -237,8 +254,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             _trackManager.SetTrack(new TrackData(last.Type, winner)
             {
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
-                ContentManager = _configuration.ContentManager
-            });
+            }, _configuration.Restart);
         }
     }
 
@@ -265,9 +281,36 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
                         await Task.Delay(_configuration.TransitionDurationMilliseconds, stoppingToken);
 
                         _adminTrackChange = false;
-                        _trackManager.SetTrack(_adminTrack);
+                        _trackManager.SetTrack(_adminTrack, _configuration.Restart);
                         _adminTrack = null;
                     }
+                }
+            }
+            catch (TaskCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error during admin track update");
+            }
+            finally
+            {
+                await Task.Delay(1000, stoppingToken);
+            }
+        }
+    }
+    
+    private async Task ExecuteManualAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                if (_manualTrackChange)
+                {
+                    
+                    Log.Information($"Starting track vote.");
+                    await UpdateAsync(stoppingToken);
                 }
             }
             catch (TaskCanceledException)
