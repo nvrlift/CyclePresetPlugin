@@ -20,6 +20,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
     private readonly List<ACTcpClient> _alreadyVoted = new();
     private readonly List<TrackChoice> _availableTracks = new();
     private readonly List<PresetType> _tracks;
+    private readonly List<PresetType> _adminTracks;
 
     private bool _votingOpen = false;
     private bool _adminTrackChange = false;
@@ -43,13 +44,8 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         _trackManager.SetRestartType(_configuration.Restart);
 
         _tracks = presetConfigurationManager.VotingPresetTypes;
-
-        PresetConfiguration startConfiguration = new() // Read from file
-        {
-            Name = _tracks.FirstOrDefault(t => t.PresetFolder == acServerConfiguration.BaseFolder)?.Name
-                   ?? acServerConfiguration.Server.Track.Split('/').Last(),
-            PresetFolder = acServerConfiguration.BaseFolder,
-        };
+        _adminTracks = presetConfigurationManager.AllPresetTypes;
+        
         _trackManager.SetTrack(new TrackData(presetConfigurationManager.CurrentConfiguration.ToPresetType(), null)
         {
             IsInit = true,
@@ -90,9 +86,9 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
     internal void ListAllTracks(ACTcpClient client)
     {
         client.SendPacket(new ChatMessage { SessionId = 255, Message = "List of all tracks:" });
-        for (int i = 0; i < _tracks.Count; i++)
+        for (int i = 0; i < _adminTracks.Count; i++)
         {
-            var track = _tracks[i];
+            var track = _adminTracks[i];
             client.SendPacket(new ChatMessage { SessionId = 255, Message = $" /admintrackset {i} - {track.Name}" });
         }
     }
@@ -113,7 +109,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
     {
         var last = _trackManager.CurrentTrack;
 
-        if (choice < 0 && choice >= _tracks.Count)
+        if (choice < 0 && choice >= _adminTracks.Count)
         {
             Log.Information($"Invalid track choice.");
             client.SendPacket(new ChatMessage { SessionId = 255, Message = "Invalid track choice." });
@@ -121,7 +117,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             return;
         }
 
-        var next = _tracks[choice];
+        var next = _adminTracks[choice];
 
         if (last.Type!.Equals(next))
         {

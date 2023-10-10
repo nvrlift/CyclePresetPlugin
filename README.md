@@ -68,7 +68,7 @@ Name: Shutoko Cut Up
 # Set Enabled to false, to exclude the Preset from Plugin Track lists
 RandomTrack:
   Weight: 1.0
-  Enabled: false;
+  Enabled: false
 VotingTrack:
-  Enabled: true;
+  Enabled: true
 ```
