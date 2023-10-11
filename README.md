@@ -1,4 +1,4 @@
-﻿# CycleTrackPlugin
+﻿# CyclePresetPlugin
 
 (Formerly VotingTrackPlugin)
 
@@ -24,14 +24,14 @@ Enable the plugin in `extra_cfg.yml`
 
 ```yaml
 EnablePlugins:
-- CycleTrackPlugin
+- CyclePresetPlugin
 ```
 
 Example configuration (add to bottom of `extra_cfg.yml`)
 
 ```yaml
 ---
-!CycleTrackConfiguration
+!CyclePresetConfiguration
 Restart: WindowsFile # yet to implement -> Docker
 # Enable Voting
 VoteEnabled: true

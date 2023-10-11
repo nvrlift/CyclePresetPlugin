@@ -11,7 +11,7 @@
         <PublishDir Condition="'$(RuntimeIdentifier)' == 'linux-arm64'">..\out-linux-arm64\plugins\$(MSBuildProjectName)\</PublishDir>
         <PublishDir Condition="'$(RuntimeIdentifier)' == 'win-x64'">..\out-win-x64\plugins\$(MSBuildProjectName)\</PublishDir>
         <PathMap>$(MSBuildProjectDirectory)=$(MSBuildProjectName)</PathMap>
-        <RootNamespace>VotingTrackPlugin</RootNamespace>
+        <RootNamespace>CyclePresetPlugin</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
