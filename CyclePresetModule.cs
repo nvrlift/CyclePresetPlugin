@@ -5,9 +5,9 @@ using nvrlift.AssettoServer.Preset;
 using nvrlift.AssettoServer.Restart;
 using nvrlift.AssettoServer.Track;
 
-namespace VotingTrackPlugin;
+namespace CyclePresetPlugin;
 
-public class VotingTrackModule : AssettoServerModule<VotingTrackConfiguration>
+public class CyclePresetModule : AssettoServerModule<CyclePresetConfiguration>
 {
     protected override void Load(ContainerBuilder builder)
     {
@@ -17,6 +17,6 @@ public class VotingTrackModule : AssettoServerModule<VotingTrackConfiguration>
         builder.RegisterType<TrackImplementation>().AsSelf().SingleInstance();
         builder.RegisterType<TrackManager>().AsSelf().SingleInstance();
         
-        builder.RegisterType<VotingTrackPlugin>().AsSelf().As<IAssettoServerAutostart>().SingleInstance();
+        builder.RegisterType<CyclePresetPlugin>().AsSelf().As<IAssettoServerAutostart>().SingleInstance();
     }
 }

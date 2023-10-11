@@ -11,6 +11,7 @@
         <PublishDir Condition="'$(RuntimeIdentifier)' == 'linux-arm64'">..\out-linux-arm64\plugins\$(MSBuildProjectName)\</PublishDir>
         <PublishDir Condition="'$(RuntimeIdentifier)' == 'win-x64'">..\out-win-x64\plugins\$(MSBuildProjectName)\</PublishDir>
         <PathMap>$(MSBuildProjectDirectory)=$(MSBuildProjectName)</PathMap>
+        <RootNamespace>VotingTrackPlugin</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -22,12 +23,6 @@
             <Private>false</Private>
             <ExcludeAssets>runtime</ExcludeAssets>
         </ProjectReference>
-        <!--
-                <ProjectReference Include=".\nvrlift.AssettoServer\nvrlift.AssettoServer.csproj">
-                    <Private>false</Private>
-                    <ExcludeAssets>runtime</ExcludeAssets>
-                </ProjectReference>
-        -->
     </ItemGroup>
 
 
