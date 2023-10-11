@@ -10,13 +10,13 @@ using nvrlift.AssettoServer.Preset;
 using nvrlift.AssettoServer.Track;
 using Serilog;
 
-namespace VotingTrackPlugin;
+namespace CyclePresetPlugin;
 
-public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutostart
+public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutostart
 {
     private readonly EntryCarManager _entryCarManager;
     private readonly TrackManager _trackManager;
-    private readonly VotingTrackConfiguration _configuration;
+    private readonly CyclePresetConfiguration _configuration;
     private readonly List<ACTcpClient> _alreadyVoted = new();
     private readonly List<TrackChoice> _availableTracks = new();
     private readonly List<PresetType> _voteTracks;
@@ -33,7 +33,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         public int Votes { get; set; }
     }
 
-    public VotingTrackPlugin(VotingTrackConfiguration configuration, PresetConfigurationManager presetConfigurationManager, 
+    public CyclePresetPlugin(CyclePresetConfiguration configuration, PresetConfigurationManager presetConfigurationManager, 
         ACServerConfiguration acServerConfiguration,
         EntryCarManager entryCarManager, TrackManager trackManager,
         IHostApplicationLifetime applicationLifetime, CSPServerScriptProvider scriptProvider) : base(applicationLifetime)
@@ -54,7 +54,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         
         // Include Client Reconnection Script
         using var streamReader = new StreamReader(Assembly.GetExecutingAssembly()
-            .GetManifestResourceStream("VotingTrackPlugin.lua.reconnectclient.lua")!);
+            .GetManifestResourceStream("CyclePresetPlugin.lua.reconnectclient.lua")!);
         scriptProvider.AddScript(streamReader.ReadToEnd(), "reconnectclient.lua");
     }
 
@@ -65,7 +65,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(_configuration.VotingIntervalMilliseconds - _configuration.VotingDurationMilliseconds,
+            await Task.Delay(_configuration.CycleIntervalMilliseconds - _configuration.VotingDurationMilliseconds,
                     stoppingToken);
             try
             {
@@ -134,6 +134,23 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             _adminTrackChange = true;
         }
     }
+    
+    internal void RandomTrack(ACTcpClient client)
+    {
+        var last = _trackManager.CurrentTrack;
+
+        PresetType next;
+        do
+        {
+            next = _adminTracks[Random.Shared.Next(_adminTracks.Count)];
+        } while (last.Type!.Equals(next));
+
+        _adminTrack = new TrackData(_trackManager.CurrentTrack.Type, next)
+        {
+            TransitionDuration = _configuration.TransitionDurationMilliseconds,
+        };
+        _adminTrackChange = true;
+    }
 
     internal void CountVote(ACTcpClient client, int choice)
     {
@@ -176,24 +193,24 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
         _availableTracks.Clear();
         _alreadyVoted.Clear();
 
-        if (_voteTracks.Count == 0) return;
+        // Don't start votes if there is not available tracks for voting
+        if (_voteTracks.Count <= 1) return;
 
         var tracksLeft = new List<PresetType>(_voteTracks);
 
-        _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = "Vote for next track:" });
+        if (_configuration.VoteEnabled)
+            _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = "Vote for next track:" });
         
         // Add current track to "Stay on track"
         if (_configuration.IncludeStayOnTrackVote)
         {
-            _availableTracks.Add(new TrackChoice
-            {
-                Track = last.Type
-            });
-            tracksLeft.Remove(last.Type!);
-            _entryCarManager.BroadcastPacket(new ChatMessage
-                { SessionId = 255, Message = $" /votetrack 0 - Stay on current track." });
+            _availableTracks.Add(new TrackChoice { Track = last.Type, Votes = 0 });
+            tracksLeft.RemoveAll(t => t.Name == last.Type!.Name && t.PresetFolder == last.Type!.PresetFolder);
+            if (_configuration.VoteEnabled)
+                _entryCarManager.BroadcastPacket(new ChatMessage
+                    { SessionId = 255, Message = $" /votetrack 0 - Stay on current track." });
             
-            for (int i = 1; i < _configuration.NumChoices + 1; i++)
+            for (int i = 1; i < _configuration.VoteChoices + 1; i++)
             {
                 if (tracksLeft.Count < 1)
                     break;
@@ -201,13 +218,14 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
                 _availableTracks.Add(new TrackChoice { Track = nextTrack, Votes = 0 });
                 tracksLeft.Remove(nextTrack);
 
-                _entryCarManager.BroadcastPacket(new ChatMessage
-                    { SessionId = 255, Message = $" /votetrack {i} - {nextTrack.Name}" });
+                if (_configuration.VoteEnabled)
+                    _entryCarManager.BroadcastPacket(new ChatMessage
+                        { SessionId = 255, Message = $" /votetrack {i} - {nextTrack.Name}" });
             }
         }
         else
         {
-            for (int i = 0; i < _configuration.NumChoices; i++)
+            for (int i = 0; i < _configuration.VoteChoices; i++)
             {
                 if (tracksLeft.Count < 1)
                     break;
@@ -215,15 +233,18 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
                 _availableTracks.Add(new TrackChoice { Track = nextTrack, Votes = 0 });
                 tracksLeft.Remove(nextTrack);
 
-                _entryCarManager.BroadcastPacket(new ChatMessage
-                    { SessionId = 255, Message = $" /votetrack {i} - {nextTrack.Name}" });
+                if (_configuration.VoteEnabled)
+                    _entryCarManager.BroadcastPacket(new ChatMessage
+                        { SessionId = 255, Message = $" /votetrack {i} - {nextTrack.Name}" });
             }
         }
-        
 
-        _votingOpen = true;
-        await Task.Delay(_configuration.VotingDurationMilliseconds, stoppingToken);
-        _votingOpen = false;
+        if (_configuration.VoteEnabled)
+        {
+            _votingOpen = true;
+            await Task.Delay(_configuration.VotingDurationMilliseconds, stoppingToken);
+            _votingOpen = false;
+        }
 
         int maxVotes = _availableTracks.Max(w => w.Votes);
         List<PresetType?> tracks = _availableTracks.Where(w => w.Votes == maxVotes).Select(w => w.Track).ToList();
@@ -236,7 +257,7 @@ public class VotingTrackPlugin : CriticalBackgroundService, IAssettoServerAutost
             _entryCarManager.BroadcastPacket(new ChatMessage
             {
                 SessionId = 255,
-                Message = $"Track vote ended. Staying on track for {_configuration.VotingIntervalMinutes} more minutes."
+                Message = $"Track vote ended. Staying on track for {_configuration.CycleIntervalMinutes} more minutes."
             });
         }
         else

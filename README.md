@@ -1,4 +1,6 @@
-﻿# VotingTrackPlugin
+﻿# CycleTrackPlugin
+
+(Formerly VotingTrackPlugin)
 
 Plugin to let players vote for a server track at a specified interval.
 
@@ -22,30 +24,32 @@ Enable the plugin in `extra_cfg.yml`
 
 ```yaml
 EnablePlugins:
-- VotingTrackPlugin
+- CycleTrackPlugin
 ```
 
 Example configuration (add to bottom of `extra_cfg.yml`)
 
 ```yaml
 ---
-!VotingTrackConfiguration
-Restart: WindowsFile # yet to implement ->Docker
+!CycleTrackConfiguration
+Restart: WindowsFile # yet to implement -> Docker
+# Enable Voting
+VoteEnabled: true
 # Number of choices players can choose from at each voting interval
-NumChoices: 3
+VoteChoices: 3
+# Will track change randomly if no vote has been counted
+ChangeTrackWithoutVotes: true
+# Whether the current preset/track should be part of the next vote.
+IncludeStayOnTrackVote: true
 # How long the vote stays open
 # Minimum 30, Default 300
 VotingDurationSeconds: 300
-# How often a vote takes place
+# How often a cycle/vote takes place
 # Minimum 5, Default 90
-VotingIntervalMinutes: 90
-# How often a vote takes place
+CycleIntervalMinutes: 90
+# How long it takes to change the preset/track after warning about it 
 # Minimum 1, Default 5
 TransitionDurationMinutes: 10
-# Will track change randomly if no vote has been counted
-ChangeTrackWithoutVotes: true
-# Whether the current track should be part of the next vote, so no map change occurs.
-IncludeStayOnTrackVote: true
 ```
 
 ### Presets
