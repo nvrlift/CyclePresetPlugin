@@ -195,21 +195,20 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
 
         _availableTracks.Clear();
         _alreadyVoted.Clear();
+        _manualTrackChange = false;
 
         // Don't start votes if there is not available tracks for voting
         if (_voteTracks.Count <= 1)
         {
             Log.Warning($"Not enough presets to start vote.");
-            _manualTrackChange = false;
             return;
         }
 
         var tracksLeft = new List<PresetType>(_voteTracks);
-        tracksLeft.RemoveAll(t => t.Name == last.Type!.Name && t.PresetFolder == last.Type!.PresetFolder);
+        tracksLeft.RemoveAll(t => t.Equals(last.Type!));
         if (tracksLeft.Count <= 1)
         {
             Log.Warning($"Not enough presets to start vote.");
-            _manualTrackChange = false;
             return;
         }
 
@@ -266,7 +265,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
         var winner = tracks[Random.Shared.Next(tracks.Count)];
 
 
-        if (last.Type!.Equals(winner!) || (maxVotes == 0 && !_configuration.ChangeTrackWithoutVotes))
+        if (!last.Type!.Equals(winner!) || (maxVotes == 0 && !_configuration.ChangeTrackWithoutVotes))
         {
             _entryCarManager.BroadcastPacket(new ChatMessage
             {

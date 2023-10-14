@@ -41,8 +41,8 @@ public class RestartImplementation
             {
                 if (client == null) continue;
             
-                _entryCarManager.KickAsync(client, "SERVER RESTART").GetAwaiter().GetResult();
-                Log.Information($"Kicking {client.Name} for Server reset.");
+                _entryCarManager.KickAsync(client, "SERVER RESTART FOR TRACK CHANGE (won't take long)").GetAwaiter().GetResult();
+                Log.Information($"Kicking {client.Name} for track change server restart.");
             }
         }
         

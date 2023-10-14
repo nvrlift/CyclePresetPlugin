@@ -1,5 +1,4 @@
 using JetBrains.Annotations;
-using Serilog;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -15,14 +14,7 @@ public class PresetConfiguration
     [YamlIgnore] public string PresetFolder { get; set; } = "";
     [YamlIgnore] public string Path { get; set; } = "";
     
-
-    public bool Equals(PresetConfiguration compare)
-    {
-        if (PresetFolder == compare.PresetFolder)
-            return true;
-
-        return false;
-    }
+    public bool Equals(PresetConfiguration compare) => PresetFolder == compare.PresetFolder;
 
     public PresetType ToPresetType()
     {
@@ -36,7 +28,6 @@ public class PresetConfiguration
     
     public static PresetConfiguration FromFile(string path)
     {
-        Log.Information($"Loading Config for preset '{path}'");
         using var stream = File.OpenText(path);
 
         var deserializer = new DeserializerBuilder()
@@ -51,7 +42,6 @@ public class PresetConfiguration
 
         cfg.Path = path;
         cfg.PresetFolder = System.IO.Path.GetDirectoryName(path)!;
-        Log.Debug($"-- {path}.PresetFolder '{cfg.PresetFolder}'");
         
         return cfg;
     }

@@ -52,7 +52,7 @@ public class PresetManager : CriticalBackgroundService
 
     private void UpdateTrack(RestartType restartType)
     {
-        if (CurrentPreset.UpcomingType != null || !CurrentPreset.Type!.Equals(CurrentPreset.UpcomingType!))
+        if (CurrentPreset.UpcomingType != null && !CurrentPreset.Type!.Equals(CurrentPreset.UpcomingType!))
         {
             Log.Information($"Track change to '{CurrentPreset.UpcomingType!.Name}' initiated");
             _presetImplementation.ChangeTrack(CurrentPreset, restartType);
