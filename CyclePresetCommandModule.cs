@@ -13,37 +13,37 @@ public class CyclePresetCommandModule : ACModuleBase
         _cyclePreset = cyclePreset;
     }
 
-    [Command("votetrack", "preset vote"), RequireConnectedPlayer]
+    [Command("votetrack", "presetvote"), RequireConnectedPlayer]
     public void VoteTrack(int choice)
     {
         _cyclePreset.CountVote(Context.Client!, choice);
     }
 
-    [Command("preset show"), RequireConnectedPlayer]
+    [Command("presetshow", "currentpreset", "currentrack"), RequireConnectedPlayer]
     public void GetCurrentTrack()
     {
         _cyclePreset.GetTrack(Context.Client!);
     }
 
-    [Command("preset list"), RequireAdmin]
+    [Command("presetlist", "presetget", "presets"), RequireAdmin]
     public void AdminTrackList()
     {
-        _cyclePreset.ListAllTracks(Context.Client!);
+        _cyclePreset.ListAllPresets(Context.Client!);
     }
 
-    [Command("preset start vote"), RequireAdmin]
+    [Command("presetstartvote", "presetvotestart"), RequireAdmin]
     public void AdminTrackVoteStart()
     {
         _cyclePreset.StartVote();
     }
 
-    [Command("preset set"), RequireAdmin]
+    [Command("presetset", "presetchange", "presetuse", "presetupdate"), RequireAdmin]
     public void AdminTrackSet(int choice)
     {
-        _cyclePreset.SetTrack(Context.Client!, choice);
+        _cyclePreset.SetPreset(Context.Client!, choice);
     }
 
-    [Command("preset random"), RequireAdmin]
+    [Command("presetrandom"), RequireAdmin]
     public void AdminTrackSet()
     {
         _cyclePreset.RandomTrack(Context.Client!);

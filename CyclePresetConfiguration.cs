@@ -1,13 +1,13 @@
 ﻿using AssettoServer.Server.Configuration;
 using JetBrains.Annotations;
-using nvrlift.AssettoServer;
 using YamlDotNet.Serialization;
 
 namespace CyclePresetPlugin;
 
 [UsedImplicitly(ImplicitUseKindFlags.Assign, ImplicitUseTargetFlags.WithMembers)]
-public class CyclePresetConfiguration : NvrliftBaseConfiguration, IValidateConfiguration<CyclePresetConfigurationValidator>
+public class CyclePresetConfiguration : IValidateConfiguration<CyclePresetConfigurationValidator>
 {
+    public RestartType Restart { get; init; } = RestartType.Disabled;
     public bool VoteEnabled { get; init; } = true;
     public int VoteChoices { get; init; } = 3;
     public bool ChangeTrackWithoutVotes { get; init; } = false;
@@ -21,5 +21,12 @@ public class CyclePresetConfiguration : NvrliftBaseConfiguration, IValidateConfi
     [YamlIgnore] public int CycleIntervalMilliseconds => CycleIntervalMinutes * 60_000;
     [YamlIgnore] public int VotingDurationMilliseconds => VotingDurationSeconds * 1000;
     [YamlIgnore] public int TransitionDurationMilliseconds => TransitionDurationMinutes * 60_000;
+    
+}
 
+public enum RestartType
+{
+    Disabled,
+    WindowsFile,
+    Docker
 }
