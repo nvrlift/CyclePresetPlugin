@@ -19,20 +19,20 @@ Server will ask users to vote for new map as per configured timeframe.
 ### Admin commands
 
 #### List available tracks / presets
-- presetlist
-- presetget
-- presets
+- /presetlist
+- /presetget
+- /presets
 
 #### Change track
 Exact usage is shown by track list
-- presetset
-- presetchange
-- presetuse
-- presetupdate
+- /presetset
+- /presetchange
+- /presetuse
+- /presetupdate
 
 #### Initiate track / preset vote
-- presetstartvote
-- presetvotestart
+- /presetstartvote
+- /presetvotestart
 
 #### Change to random track
 - presetrandom
