@@ -30,24 +30,13 @@ function script.drawUI()
     end
 end
 
-function sleep(n)  -- seconds
-    --[[local t0 = os.clock()
-    while os.clock() - t0 <= n do end]]
-
-    local ntime = os.clock() + n -- / 10
-    repeat until os.clock() > ntime
-end
-
-local waitticks = 10 
 function script.update(dt)
-    if (drawReconnect == true and pleaseReconnect == false and waitticks > 0) then
-        waitticks = waitticks - 1
-    elseif (drawReconnect == true and pleaseReconnect == false and waitticks == 0) then
+    if (drawReconnect == true and pleaseReconnect == false) then
         pleaseReconnect = true
     elseif pleaseReconnect then
         pleaseReconnect = false
-        sleep(reconnectDelay)
-        -- drawReconnect = false
-        ac.reconnectTo({ carID = ac.getCarID(0) })
+        setTimeout(function ()
+            ac.reconnectTo({ carID = ac.getCarID(0) })
+        end, reconnectDelay)
     end
 end
