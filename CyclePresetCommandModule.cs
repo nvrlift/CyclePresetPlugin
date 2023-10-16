@@ -13,7 +13,7 @@ public class CyclePresetCommandModule : ACModuleBase
         _cyclePreset = cyclePreset;
     }
 
-    [Command("votetrack", "presetvote"), RequireConnectedPlayer]
+    [Command("votetrack", "vt", "votepreset", "vp", "presetvote", "pv"), RequireConnectedPlayer]
     public void VoteTrack(int choice)
     {
         _cyclePreset.CountVote(Context.Client!, choice);

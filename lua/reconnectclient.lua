@@ -1,3 +1,5 @@
+local pngUrl = "http://" .. ac.getServerIP() .. ":" .. ac.getServerPortHTTP() .. "/cyclepreset/reconnecting.png"
+
 local pleaseReconnect = false
 local drawReconnect = false
 local reconnectDelay = 0
@@ -14,32 +16,18 @@ local reconnectClientEvent = ac.OnlineEvent(
     end)
 
 local centerPos = nil
+local color = rgbm(255, 255, 255, 1.0)
+local pngSize = vec2(900, 300)
 function script.drawUI()
     if drawReconnect then
         if centerPos == nil then
-            centerPos = vec2((ac.getUI().windowSize.x - 800) / 2, ac.getUI().windowSize.y / 2 - 100)
+            centerPos = vec2(ac.getUI().windowSize.x / 2, ac.getUI().windowSize.y / 2)
         end
         
-        ui.beginTransparentWindow("reconnectClient", centerPos, vec2(800, 200))
-        ui.beginOutline()
+        local position = vec2(centerPos.x - (pngSize.x / 2), centerPos.y - (pngSize.y / 2))
 
-        ui.pushFont(ui.Font.Huge)
-
-        ui.textColored("RECONNECTING IN " .. reconnectDelay .. " SECONDS...", rgbm.colors.red)
-
-        ui.popFont()
-        ui.endOutline(rgbm.colors.black)
-
-        ui.endTransparentWindow()
+        ui.drawImage(pngUrl, position, position + pngSize, color)
     end
-end
-
-function sleep(n)  -- seconds
-    --[[local t0 = os.clock()
-    while os.clock() - t0 <= n do end]]
-
-    local ntime = os.clock() + n -- / 10
-    repeat until os.clock() > ntime
 end
 
 function script.update(dt)
@@ -47,8 +35,8 @@ function script.update(dt)
         pleaseReconnect = true
     elseif pleaseReconnect then
         pleaseReconnect = false
-        sleep(reconnectDelay)
-        -- drawReconnect = false
-        ac.reconnectTo({ carID = ac.getCarID(0) })
+        setTimeout(function ()
+            ac.reconnectTo({ carID = ac.getCarID(0) })
+        end, reconnectDelay)
     end
 end
