@@ -14,8 +14,12 @@ Most commands have multiple alias
 
 #### Vote for the next track / preset
 Server will ask users to vote for new map as per configured timeframe.
-- /votetrack <number> 
+- /votetrack <number>
+- /vt <number>
+- /votepreset <number>
+- /vp <number>
 - /presetvote <number>
+- /pv <number>
 ### Admin commands
 
 #### List available tracks / presets
