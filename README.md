@@ -8,38 +8,38 @@ Plugin to let players vote for a server track at a specified interval.
 Most commands have multiple alias
 
 #### Show current track / preset
-- /currenttrack
-- /presetshow
-- /currentpreset
+- `/currenttrack`
+- `/presetshow`
+- `/currentpreset`
 
 #### Vote for the next track / preset
 Server will ask users to vote for new map as per configured timeframe.
-- /votetrack <number>
-- /vt <number>
-- /votepreset <number>
-- /vp <number>
-- /presetvote <number>
-- /pv <number>
+- `/votetrack <number>`
+- `/vt <number>`
+- `/votepreset <number>`
+- `/vp <number>`
+- `/presetvote <number>`
+- `/pv <number>`
 ### Admin commands
 
 #### List available tracks / presets
-- /presetlist
-- /presetget
-- /presets
+- `/presetlist`
+- `/presetget`
+- `/presets`
 
 #### Change track
 Exact usage is shown by track list
-- /presetset
-- /presetchange
-- /presetuse
-- /presetupdate
+- `/presetset`
+- `/presetchange`
+- `/presetuse`
+- `/presetupdate`
 
 #### Initiate track / preset vote
-- /presetstartvote
-- /presetvotestart
+- `/presetstartvote`
+- `/presetvotestart`
 
 #### Change to random track
-- presetrandom
+- `/presetrandom`
 
 ## Configuration
 
