@@ -51,6 +51,8 @@ public class RestartImplementation
         switch (type)
         {
             case RestartType.WindowsFile:
+            case RestartType.LinuxFile:
+            case RestartType.File:
             {
                 var restartPath = Path.Join(_acServerConfiguration.BaseFolder, "restart", $"{Environment.ProcessId}.asrestart");
                 Log.Information($"Trying to create restart file: {restartPath}");

@@ -28,5 +28,7 @@ public enum RestartType
 {
     Disabled,
     WindowsFile,
+    LinuxFile,
+    File,
     Docker
 }

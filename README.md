@@ -57,7 +57,8 @@ Example configuration (add to bottom of `extra_cfg.yml`)
 ```yaml
 ---
 !CyclePresetConfiguration
-Restart: WindowsFile # yet to implement -> Docker
+Restart: File # Creates a file, which is used by AS-Restarter to change preset 
+# yet to implement -> Docker
 # Enable Voting
 VoteEnabled: true
 # Number of choices players can choose from at each voting interval
