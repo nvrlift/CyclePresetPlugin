@@ -67,6 +67,8 @@ VoteChoices: 3
 ChangeTrackWithoutVotes: true
 # Whether the current preset/track should be part of the next vote.
 IncludeStayOnTrackVote: true
+# Reconnect clients instead of kicking when restart is initiated.
+ReconnectEnabled: true
 # How long the vote stays open
 # Minimum 30, Default 300
 VotingDurationSeconds: 300

@@ -248,7 +248,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
         }
 
         int maxVotes = _availablePresets.Max(w => w.Votes);
-        List<PresetChoice?> tracks = _availablePresets.Where(w => w.Votes == maxVotes).ToList();
+        List<PresetChoice> tracks = _availablePresets.Where(w => w.Votes == maxVotes).ToList();
 
         var winner = tracks[Random.Shared.Next(tracks.Count)];
 
