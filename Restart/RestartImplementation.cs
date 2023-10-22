@@ -9,10 +9,12 @@ public class RestartImplementation
 {
     private readonly ACServerConfiguration _acServerConfiguration;
     private readonly EntryCarManager _entryCarManager;
+    private readonly CyclePresetConfiguration _cyclePresetConfiguration;
 
-    public RestartImplementation(ACServerConfiguration acServerConfiguration, EntryCarManager entryCarManager)
+    public RestartImplementation(ACServerConfiguration acServerConfiguration, CyclePresetConfiguration cyclePresetConfiguration, EntryCarManager entryCarManager)
     {
         _acServerConfiguration = acServerConfiguration;
+        _cyclePresetConfiguration = cyclePresetConfiguration;
         _entryCarManager = entryCarManager;
     }
 
@@ -20,7 +22,7 @@ public class RestartImplementation
     {
         // Reconnect clients
         Log.Information("Reconnecting all clients for preset change.");
-        if (_acServerConfiguration.Extra.EnableClientMessages)
+        if (_acServerConfiguration.Extra.EnableClientMessages && _cyclePresetConfiguration.ReconnectEnabled)
         {
             foreach (var client in _entryCarManager.EntryCars.Select(c => c.Client))
             {

@@ -12,6 +12,7 @@ public class CyclePresetConfiguration : IValidateConfiguration<CyclePresetConfig
     public int VoteChoices { get; init; } = 3;
     public bool ChangeTrackWithoutVotes { get; init; } = false;
     public bool IncludeStayOnTrackVote { get; init; } = true;
+    public bool ReconnectEnabled { get; init; } = true;
     
     // Cycle Numbers :)
     public int CycleIntervalMinutes { get; init; } = 90;
