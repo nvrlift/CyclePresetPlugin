@@ -57,6 +57,10 @@ Example configuration (add to bottom of `extra_cfg.yml`)
 ```yaml
 ---
 !CyclePresetConfiguration
+# Reconnect clients instead of kicking when restart is initiated.
+# Please disable reconnect with varying entry lists in the presets
+ReconnectEnabled: true
+# Type of restart client used
 Restart: File # Creates a file, which is used by AS-Restarter to change preset 
 # yet to implement -> Docker
 # Enable Voting
@@ -67,8 +71,6 @@ VoteChoices: 3
 ChangeTrackWithoutVotes: true
 # Whether the current preset/track should be part of the next vote.
 IncludeStayOnTrackVote: true
-# Reconnect clients instead of kicking when restart is initiated.
-ReconnectEnabled: true
 # How long the vote stays open
 # Minimum 30, Default 300
 VotingDurationSeconds: 300
