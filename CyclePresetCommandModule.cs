@@ -34,7 +34,25 @@ public class CyclePresetCommandModule : ACModuleBase
     [Command("presetstartvote", "presetvotestart"), RequireAdmin]
     public void AdminTrackVoteStart()
     {
-        _cyclePreset.StartVote();
+        _cyclePreset.StartVote(Client!);
+    }
+
+    [Command("presetfinishvote", "presetvotefinish"), RequireAdmin]
+    public void AdminTrackVoteFinish()
+    {
+        _cyclePreset.FinishVote(Client!);
+    }
+
+    [Command("presetcancelvote", "presetvotecancel"), RequireAdmin]
+    public void AdminTrackVoteCancel()
+    {
+        _cyclePreset.CancelVote(Client!);
+    }
+
+    [Command("presetextendvote", "presetvoteextend"), RequireAdmin]
+    public void AdminTrackVoteExtend(int seconds)
+    {
+        _cyclePreset.ExtendVote(Client!, seconds);
     }
 
     [Command("presetset", "presetchange", "presetuse", "presetupdate"), RequireAdmin]

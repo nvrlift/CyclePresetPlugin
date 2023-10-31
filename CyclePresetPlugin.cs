@@ -26,7 +26,9 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
     private PresetData? _adminTrack = null;
     private bool _adminTrackChange = false;
     
-    private bool _manualTrackChange = false; 
+    private bool _manualTrackChange = false;
+    private bool _voteStarted = false;
+    private int _extendVotingSeconds = 0;
 
     private class PresetChoice
     {
@@ -65,27 +67,14 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _ = Task.Run(() => ExecuteAdminAsync(stoppingToken), stoppingToken);
-        _ = Task.Run(() => ExecuteManualAsync(stoppingToken), stoppingToken);
-
-        while (!stoppingToken.IsCancellationRequested)
+        Task[] tasks =
         {
-            await Task.Delay(_configuration.CycleIntervalMilliseconds - _configuration.VotingDurationMilliseconds,
-                    stoppingToken);
-            try
-            {
-                Log.Information($"Starting track vote.");
-                await UpdateAsync(stoppingToken);
-            }
-            catch (TaskCanceledException)
-            {
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error during voting track update");
-            }
-            finally { }
-        }
+            Task.Run(() => ExecuteAdminAsync(stoppingToken), stoppingToken),
+            Task.Run(() => ExecuteManualAsync(stoppingToken), stoppingToken),
+            Task.Run(() => ExecuteVotingAsync(stoppingToken), stoppingToken),
+        };
+
+        await Task.WhenAll(tasks).WaitAsync(stoppingToken);
     }
 
     internal void ListAllPresets(ACTcpClient client)
@@ -186,13 +175,36 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
             { SessionId = 255, Message = $"Your vote for {votedTrack.Track!.Name} has been counted." });
     }
 
-    internal void StartVote()
+    internal void StartVote(ACTcpClient client)
     {
+
+        if (_voteStarted)
+        {
+            client.SendPacket(new ChatMessage { SessionId = 255, Message = "Vote already ongoing." });
+            return;
+        }
         _manualTrackChange = true;
+    }
+    
+    internal void FinishVote(ACTcpClient client)
+    {
+        // TODO no clue, i dunno how to have an OR on CancellationToken :)
+    }
+    internal void CancelVote(ACTcpClient client)
+    {
+        // TODO no clue, i dunno how to have an OR on CancellationToken :)
+    }
+    internal void ExtendVote(ACTcpClient client, int seconds)
+    {
+        _extendVotingSeconds += seconds;
     }
 
     private async Task UpdateAsync(CancellationToken stoppingToken)
     {
+        if(_voteStarted) return;
+        
+        _voteStarted = true;
+        
         var last = _presetManager.CurrentPreset;
 
         _availablePresets.Clear();
@@ -244,6 +256,15 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
         {
             _votingOpen = true;
             await Task.Delay(_configuration.VotingDurationMilliseconds, stoppingToken);
+
+            // Allow to extend vo
+            while (_extendVotingSeconds != 0)
+            {
+                var extend = _extendVotingSeconds;
+                _extendVotingSeconds = 0;
+                await Task.Delay(extend * 1000, stoppingToken);
+            }
+            
             _votingOpen = false;
         }
 
@@ -252,7 +273,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
 
         var winner = tracks[Random.Shared.Next(tracks.Count)];
 
-        if (last.Type!.Equals(winner!.Track!) || (maxVotes == 0 && !_configuration.ChangeTrackWithoutVotes))
+        if (last.Type!.Equals(winner.Track!) || (maxVotes == 0 && !_configuration.ChangeTrackWithoutVotes))
         {
             _entryCarManager.BroadcastPacket(new ChatMessage
             {
@@ -277,8 +298,9 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
             }, _configuration.Restart);
         }
+        _voteStarted = false;
     }
-
+    
     private async Task ExecuteAdminAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -345,6 +367,28 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
             {
                 await Task.Delay(1000, stoppingToken);
             }
+        }
+    }
+    
+    private async Task ExecuteVotingAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await Task.Delay(_configuration.CycleIntervalMilliseconds - _configuration.VotingDurationMilliseconds,
+                stoppingToken);
+            try
+            {
+                Log.Information($"Starting track vote.");
+                await UpdateAsync(stoppingToken);
+            }
+            catch (TaskCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error during voting track update");
+            }
+            finally { }
         }
     }
 }
