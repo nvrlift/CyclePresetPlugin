@@ -8,7 +8,7 @@ namespace CyclePresetPlugin;
 public class CyclePresetConfiguration : IValidateConfiguration<CyclePresetConfigurationValidator>
 {
     public RestartType Restart { get; init; } = RestartType.Disabled;
-    public bool VoteEnabled { get; init; } = true;
+    public bool VoteEnabled { get; init; } = true; 
     public int VoteChoices { get; init; } = 3;
     public bool ChangeTrackWithoutVotes { get; init; } = false;
     public bool IncludeStayOnTrackVote { get; init; } = true;

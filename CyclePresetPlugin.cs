@@ -67,12 +67,14 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Task[] tasks =
+        List<Task> tasks = new()
         {
             Task.Run(() => ExecuteAdminAsync(stoppingToken), stoppingToken),
             Task.Run(() => ExecuteManualAsync(stoppingToken), stoppingToken),
-            Task.Run(() => ExecuteVotingAsync(stoppingToken), stoppingToken),
         };
+
+        if (_configuration.VoteEnabled)
+            tasks.Add(Task.Run(() => ExecuteVotingAsync(stoppingToken), stoppingToken));
 
         await Task.WhenAll(tasks).WaitAsync(stoppingToken);
     }
@@ -199,7 +201,108 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
         _extendVotingSeconds += seconds;
     }
 
-    private async Task UpdateAsync(CancellationToken stoppingToken)
+    private async Task VotingAsync(CancellationToken stoppingToken)
+    {
+        if(_voteStarted) return;
+        
+        _voteStarted = true;
+        
+        var last = _presetManager.CurrentPreset;
+
+        _availablePresets.Clear();
+        _alreadyVoted.Clear();
+        _manualTrackChange = false;
+
+        // Don't start votes if there is not available tracks for voting
+        if (_votePresets.Count <= 1)
+        {
+            Log.Warning($"Not enough presets to start vote.");
+            return;
+        }
+
+        var tracksLeft = new List<PresetType>(_votePresets);
+        tracksLeft.RemoveAll(t => t.Equals(last.Type!));
+        if (tracksLeft.Count <= 1)
+        {
+            Log.Warning($"Not enough presets to start vote.");
+            return;
+        }
+
+        if (_configuration.VoteEnabled)
+            _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = "Vote for next track:" });
+        
+        // Add "Stay on current track"
+        if (_configuration.IncludeStayOnTrackVote)
+        {
+            _availablePresets.Add(new PresetChoice { Track = last.Type, Votes = 0 });
+            if (_configuration.VoteEnabled)
+                _entryCarManager.BroadcastPacket(new ChatMessage
+                    { SessionId = 255, Message = $" /vt 0 - Stay on current track." });
+            
+            
+        }
+        for (int i = _availablePresets.Count; i < _configuration.VoteChoices; i++)
+        {
+            if (tracksLeft.Count < 1)
+                break;
+            var nextTrack = tracksLeft[Random.Shared.Next(tracksLeft.Count)];
+            _availablePresets.Add(new PresetChoice { Track = nextTrack, Votes = 0 });
+            tracksLeft.Remove(nextTrack);
+
+            if (_configuration.VoteEnabled)
+                _entryCarManager.BroadcastPacket(new ChatMessage
+                    { SessionId = 255, Message = $" /vt {i} - {nextTrack.Name}" });
+        }
+
+        if (_configuration.VoteEnabled)
+        {
+            _votingOpen = true;
+            await Task.Delay(_configuration.VotingDurationMilliseconds, stoppingToken);
+
+            // Allow to extend vo
+            while (_extendVotingSeconds != 0)
+            {
+                var extend = _extendVotingSeconds;
+                _extendVotingSeconds = 0;
+                await Task.Delay(extend * 1000, stoppingToken);
+            }
+            
+            _votingOpen = false;
+        }
+
+        int maxVotes = _availablePresets.Max(w => w.Votes);
+        List<PresetChoice> tracks = _availablePresets.Where(w => w.Votes == maxVotes).ToList();
+
+        var winner = tracks[Random.Shared.Next(tracks.Count)];
+
+        if (last.Type!.Equals(winner.Track!) || (maxVotes == 0 && !_configuration.ChangeTrackWithoutVotes))
+        {
+            _entryCarManager.BroadcastPacket(new ChatMessage
+            {
+                SessionId = 255,
+                Message = $"Track vote ended. Staying on track for {_configuration.CycleIntervalMinutes} more minutes."
+            });
+        }
+        else
+        {
+            _entryCarManager.BroadcastPacket(new ChatMessage
+                { SessionId = 255, Message = $"Track vote ended. Next track: {winner.Track!.Name} - {winner.Votes} votes" });
+            _entryCarManager.BroadcastPacket(new ChatMessage
+            {
+                SessionId = 255, Message = $"Track will change in {_configuration.TransitionDurationMinutes} minutes."
+            });
+
+            // Delay the track switch by configured time delay
+            await Task.Delay(_configuration.TransitionDurationMilliseconds, stoppingToken);
+
+            _presetManager.SetTrack(new PresetData(last.Type, winner.Track)
+            {
+                TransitionDuration = _configuration.TransitionDurationMilliseconds,
+            }, _configuration.Restart);
+        }
+        _voteStarted = false;
+    }
+    private async Task RandomAsync(CancellationToken stoppingToken)
     {
         if(_voteStarted) return;
         
@@ -353,7 +456,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
                 {
                     
                     Log.Information($"Starting track vote.");
-                    await UpdateAsync(stoppingToken);
+                    await VotingAsync(stoppingToken);
                 }
             }
             catch (TaskCanceledException)
@@ -379,7 +482,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
             try
             {
                 Log.Information($"Starting track vote.");
-                await UpdateAsync(stoppingToken);
+                await VotingAsync(stoppingToken);
             }
             catch (TaskCanceledException)
             {
