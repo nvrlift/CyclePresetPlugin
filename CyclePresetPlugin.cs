@@ -204,7 +204,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
         _extendVotingSeconds += seconds;
     }
 
-    internal async Task<bool> WaitVoting(CancellationToken stoppingToken)
+    private async Task<bool> WaitVoting(CancellationToken stoppingToken)
     {
         try
         {
@@ -214,9 +214,8 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
             for (var s = 0; s <= _configuration.VotingDurationSeconds; s++)
             {
                 if (_finishVote != 0)
-                    await Task.Delay(1000, stoppingToken);
-                else
                     break;
+                await Task.Delay(1000, stoppingToken);
             }
 
             // Allow to extend voting
@@ -227,19 +226,15 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
                 for (var s = 0; s <= extend; s++)
                 {
                     if (_finishVote != 0)
-                        await Task.Delay(1000, stoppingToken);
-                    else
                         break;
+                    await Task.Delay(1000, stoppingToken);
                 }
             }
         }
         catch (OperationCanceledException ex) { }
         finally
         {
-            
-        
             _votingOpen = false;
-
         }
         var result = _finishVote >= 0;
         _finishVote = 0;
