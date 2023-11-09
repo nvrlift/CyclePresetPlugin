@@ -37,10 +37,14 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
         public int Votes { get; set; }
     }
 
-    public CyclePresetPlugin(CyclePresetConfiguration configuration, PresetConfigurationManager presetConfigurationManager, 
+    public CyclePresetPlugin(CyclePresetConfiguration configuration,
+        PresetConfigurationManager presetConfigurationManager, 
         ACServerConfiguration acServerConfiguration,
-        EntryCarManager entryCarManager, PresetManager presetManager,
-        IHostApplicationLifetime applicationLifetime, CSPServerScriptProvider scriptProvider) : base(applicationLifetime)
+        EntryCarManager entryCarManager,
+        PresetManager presetManager,
+        IHostApplicationLifetime applicationLifetime,
+        CSPServerScriptProvider scriptProvider,
+        CSPFeatureManager cspFeatureManager) : base(applicationLifetime)
     {
         _configuration = configuration;
         _entryCarManager = entryCarManager;
@@ -64,6 +68,8 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
             var reconnectScript = streamReader.ReadToEnd();
             scriptProvider.AddScript(reconnectScript, "reconnectclient.lua");
         }
+        
+        cspFeatureManager.Add(new CSPFeature { Name = "FREQUENT_TRACK_CHANGES" });
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
