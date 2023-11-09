@@ -26,7 +26,10 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
     private PresetData? _adminTrack = null;
     private bool _adminTrackChange = false;
     
-    private bool _manualTrackChange = false; 
+    private bool _manualTrackChange = false;
+    private bool _voteStarted = false;
+    private int _extendVotingSeconds = 0;
+    private short _finishVote = 0;
 
     private class PresetChoice
     {
@@ -65,27 +68,16 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _ = Task.Run(() => ExecuteAdminAsync(stoppingToken), stoppingToken);
-        _ = Task.Run(() => ExecuteManualAsync(stoppingToken), stoppingToken);
-
-        while (!stoppingToken.IsCancellationRequested)
+        List<Task> tasks = new()
         {
-            await Task.Delay(_configuration.CycleIntervalMilliseconds - _configuration.VotingDurationMilliseconds,
-                    stoppingToken);
-            try
-            {
-                Log.Information($"Starting track vote.");
-                await UpdateAsync(stoppingToken);
-            }
-            catch (TaskCanceledException)
-            {
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error during voting track update");
-            }
-            finally { }
-        }
+            Task.Run(() => ExecuteAdminAsync(stoppingToken), stoppingToken),
+            Task.Run(() => ExecuteManualVotingAsync(stoppingToken), stoppingToken),
+        };
+
+        if (_configuration.VoteEnabled)
+            tasks.Add(Task.Run(() => ExecuteVotingAsync(stoppingToken), stoppingToken));
+
+        await Task.WhenAll(tasks).WaitAsync(stoppingToken);
     }
 
     internal void ListAllPresets(ACTcpClient client)
@@ -186,13 +178,75 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
             { SessionId = 255, Message = $"Your vote for {votedTrack.Track!.Name} has been counted." });
     }
 
-    internal void StartVote()
+    internal void StartVote(ACTcpClient client)
     {
+
+        if (_voteStarted)
+        {
+            client.SendPacket(new ChatMessage { SessionId = 255, Message = "Vote already ongoing." });
+            return;
+        }
         _manualTrackChange = true;
     }
-
-    private async Task UpdateAsync(CancellationToken stoppingToken)
+    
+    internal void FinishVote(ACTcpClient client)
     {
+        _finishVote = 1;
+    }
+    
+    internal void CancelVote(ACTcpClient client)
+    {
+        _finishVote = -1;
+    }
+    
+    internal void ExtendVote(ACTcpClient client, int seconds)
+    {
+        _extendVotingSeconds += seconds;
+    }
+
+    private async Task<bool> WaitVoting(CancellationToken stoppingToken)
+    {
+        try
+        {
+            // Wait for the vote to finish
+            _votingOpen = true;
+
+            for (var s = 0; s <= _configuration.VotingDurationSeconds; s++)
+            {
+                if (_finishVote != 0)
+                    break;
+                await Task.Delay(1000, stoppingToken);
+            }
+
+            // Allow to extend voting
+            while (_extendVotingSeconds != 0)
+            {
+                var extend = _extendVotingSeconds;
+                _extendVotingSeconds = 0;
+                for (var s = 0; s <= extend; s++)
+                {
+                    if (_finishVote != 0)
+                        break;
+                    await Task.Delay(1000, stoppingToken);
+                }
+            }
+        }
+        catch (OperationCanceledException ex) { }
+        finally
+        {
+            _votingOpen = false;
+        }
+        var result = _finishVote >= 0;
+        _finishVote = 0;
+        return result;
+    }
+
+    private async Task VotingAsync(CancellationToken stoppingToken, bool manualVote = false)
+    {
+        if(_voteStarted) return;
+        
+        _voteStarted = true;
+        
         var last = _presetManager.CurrentPreset;
 
         _availablePresets.Clear();
@@ -200,12 +254,6 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
         _manualTrackChange = false;
 
         // Don't start votes if there is not available tracks for voting
-        if (_votePresets.Count <= 1)
-        {
-            Log.Warning($"Not enough presets to start vote.");
-            return;
-        }
-
         var tracksLeft = new List<PresetType>(_votePresets);
         tracksLeft.RemoveAll(t => t.Equals(last.Type!));
         if (tracksLeft.Count <= 1)
@@ -214,14 +262,14 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
             return;
         }
 
-        if (_configuration.VoteEnabled)
+        if (_configuration.VoteEnabled || manualVote)
             _entryCarManager.BroadcastPacket(new ChatMessage { SessionId = 255, Message = "Vote for next track:" });
         
         // Add "Stay on current track"
         if (_configuration.IncludeStayOnTrackVote)
         {
             _availablePresets.Add(new PresetChoice { Track = last.Type, Votes = 0 });
-            if (_configuration.VoteEnabled)
+            if (_configuration.VoteEnabled || manualVote)
                 _entryCarManager.BroadcastPacket(new ChatMessage
                     { SessionId = 255, Message = $" /vt 0 - Stay on current track." });
             
@@ -235,16 +283,16 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
             _availablePresets.Add(new PresetChoice { Track = nextTrack, Votes = 0 });
             tracksLeft.Remove(nextTrack);
 
-            if (_configuration.VoteEnabled)
+            if (_configuration.VoteEnabled || manualVote)
                 _entryCarManager.BroadcastPacket(new ChatMessage
                     { SessionId = 255, Message = $" /vt {i} - {nextTrack.Name}" });
         }
 
-        if (_configuration.VoteEnabled)
+        // Wait for the vote to finish
+        if (_configuration.VoteEnabled || manualVote)
         {
-            _votingOpen = true;
-            await Task.Delay(_configuration.VotingDurationMilliseconds, stoppingToken);
-            _votingOpen = false;
+            if (!await WaitVoting(stoppingToken))
+                return;
         }
 
         int maxVotes = _availablePresets.Max(w => w.Votes);
@@ -252,7 +300,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
 
         var winner = tracks[Random.Shared.Next(tracks.Count)];
 
-        if (last.Type!.Equals(winner!.Track!) || (maxVotes == 0 && !_configuration.ChangeTrackWithoutVotes))
+        if (last.Type!.Equals(winner.Track!) || (maxVotes == 0 && !_configuration.ChangeTrackWithoutVotes))
         {
             _entryCarManager.BroadcastPacket(new ChatMessage
             {
@@ -277,8 +325,9 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
             }, _configuration.Restart);
         }
+        _voteStarted = false;
     }
-
+    
     private async Task ExecuteAdminAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -321,7 +370,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
         }
     }
     
-    private async Task ExecuteManualAsync(CancellationToken stoppingToken)
+    private async Task ExecuteManualVotingAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -331,7 +380,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
                 {
                     
                     Log.Information($"Starting track vote.");
-                    await UpdateAsync(stoppingToken);
+                    await VotingAsync(stoppingToken, true);
                 }
             }
             catch (TaskCanceledException)
@@ -345,6 +394,28 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
             {
                 await Task.Delay(1000, stoppingToken);
             }
+        }
+    }
+    
+    private async Task ExecuteVotingAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await Task.Delay(_configuration.CycleIntervalMilliseconds - _configuration.VotingDurationMilliseconds,
+                stoppingToken);
+            try
+            {
+                Log.Information($"Starting track vote.");
+                await VotingAsync(stoppingToken);
+            }
+            catch (TaskCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error during voting track update");
+            }
+            finally { }
         }
     }
 }
