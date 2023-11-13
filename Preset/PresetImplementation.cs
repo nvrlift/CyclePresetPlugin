@@ -23,11 +23,11 @@ public class PresetImplementation
         _sessionManager = sessionManager;
     }
 
-    public void ChangeTrack(PresetData preset, RestartType restartType)
+    public void ChangeTrack(PresetData preset)
     {
         // Notify about restart
         Log.Information($"Restarting server");
-        _restartImplementation.InitiateRestart(preset.UpcomingType!.PresetFolder, restartType);
+        _restartImplementation.InitiateRestart(preset.UpcomingType!.PresetFolder);
         
         // _checksumManager.Initialize();
         // _sessionManager.NextSession();

@@ -8,7 +8,6 @@ namespace CyclePresetPlugin;
 public class CyclePresetConfiguration : IValidateConfiguration<CyclePresetConfigurationValidator>
 {
     // General settings
-    public RestartType Restart { get; init; } = RestartType.Disabled;
     public bool ReconnectEnabled { get; init; } = true;
     
     // Voting settings
@@ -26,13 +25,4 @@ public class CyclePresetConfiguration : IValidateConfiguration<CyclePresetConfig
     [YamlIgnore] public int VotingDurationMilliseconds => VotingDurationSeconds * 1000;
     [YamlIgnore] public int TransitionDurationMilliseconds => TransitionDurationMinutes * 60_000;
     
-}
-
-public enum RestartType
-{
-    Disabled,
-    WindowsFile,
-    LinuxFile,
-    File,
-    Docker
 }

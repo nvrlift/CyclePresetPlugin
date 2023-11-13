@@ -49,7 +49,6 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
         _configuration = configuration;
         _entryCarManager = entryCarManager;
         _presetManager = presetManager;
-        _presetManager.SetRestartType(_configuration.Restart);
 
         _votePresets = presetConfigurationManager.VotingPresetTypes;
         _adminPresets = presetConfigurationManager.AllPresetTypes;
@@ -58,7 +57,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
         {
             IsInit = true,
             TransitionDuration = 0
-        }, configuration.Restart);
+        });
         
         // Include Client Reconnection Script
         if (acServerConfiguration.Extra.EnableClientMessages)
@@ -329,7 +328,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
             _presetManager.SetTrack(new PresetData(last.Type, winner.Track)
             {
                 TransitionDuration = _configuration.TransitionDurationMilliseconds,
-            }, _configuration.Restart);
+            });
         }
         _voteStarted = false;
     }
@@ -357,7 +356,7 @@ public class CyclePresetPlugin : CriticalBackgroundService, IAssettoServerAutost
                         await Task.Delay(_configuration.TransitionDurationMilliseconds, stoppingToken);
 
                         _adminTrackChange = false;
-                        _presetManager.SetTrack(_adminTrack, _configuration.Restart);
+                        _presetManager.SetTrack(_adminTrack);
                         _adminTrack = null;
                     }
                 }

@@ -38,6 +38,14 @@ Exact usage is shown by track list
 - `/presetstartvote`
 - `/presetvotestart`
 
+#### Finish track / preset vote
+- `/presetfinishvote`
+- `/presetvotefinish`
+
+#### Cancel track / preset vote
+- `/presetcancelvote`
+- `/presetvotecancel`
+
 #### Change to random track
 - `/presetrandom`
 
@@ -60,9 +68,6 @@ Example configuration (add to bottom of `extra_cfg.yml`)
 # Reconnect clients instead of kicking when restart is initiated.
 # Please disable reconnect with varying entry lists in the presets
 ReconnectEnabled: true
-# Type of restart client used
-Restart: File # Creates a file, which is used by AS-Restarter to change preset 
-# yet to implement -> Docker
 # Enable Voting
 VoteEnabled: true
 # Number of choices players can choose from at each voting interval

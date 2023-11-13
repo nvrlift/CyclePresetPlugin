@@ -18,7 +18,7 @@ public class RestartImplementation
         _entryCarManager = entryCarManager;
     }
 
-    public void InitiateRestart(string presetPath, RestartType type)
+    public void InitiateRestart(string presetPath)
     {
         // Reconnect clients
         Log.Information("Reconnecting all clients for preset change.");
@@ -50,29 +50,12 @@ public class RestartImplementation
         
         var preset = new DirectoryInfo(presetPath).Name;
 
-        switch (type)
-        {
-            case RestartType.WindowsFile:
-            case RestartType.LinuxFile:
-            case RestartType.File:
-            {
-                var restartPath = Path.Join(_acServerConfiguration.BaseFolder, "restart", $"{Environment.ProcessId}.asrestart");
-                Log.Information($"Trying to create restart file: {restartPath}");
-                var restartFile = File.Create(restartPath);
-                byte[] content = new UTF8Encoding(true).GetBytes(preset);
-                restartFile.Write(content, 0, content.Length);
-                restartFile.Close();
-                break;
-            }
-            case RestartType.Docker:
-            {
-                throw new NotImplementedException();
-            }
-            default:
-            {
-                throw new NotImplementedException();
-            }
-        }
-            
+        // Restart the server
+        var restartPath = Path.Join(_acServerConfiguration.BaseFolder, "restart", $"{Environment.ProcessId}.asrestart");
+        Log.Information($"Trying to create restart file: {restartPath}");
+        var restartFile = File.Create(restartPath);
+        byte[] content = new UTF8Encoding(true).GetBytes(preset);
+        restartFile.Write(content, 0, content.Length);
+        restartFile.Close();
     }
 }
